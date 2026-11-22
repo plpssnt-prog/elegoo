@@ -24,3 +24,11 @@ public/js/link.js          collegamento WebUSB / Web Serial
 
 ## Pubblicazione
 Worker statico (`wrangler.jsonc` → cartella `public`). Serve HTTPS: workers.dev va bene.
+
+## App installabile (PWA)
+In Chrome su Android: menu ⋮ → «Installa app» (o il pulsante «Installa» in alto). Funziona anche offline;
+con la rete scarica sempre la versione più recente.
+
+## Aggiornare guide e programmi
+Le guide PDF si rigenerano con `python3 strumenti/guide.py public/guide` (serve `reportlab`).
+Dopo aver cambiato guide o programmi, aumenta `VERSIONE` in `public/js/versione.js`: così il telefono scarica le copie nuove.

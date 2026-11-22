@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f5f6f8">
 <title>UNO Lab</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icone/favicon-32.png">
+<link rel="apple-touch-icon" href="icone/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="UNO Lab">
 <style>
   :root { --bg:#f5f6f8; --card:#ffffff; --bordo:#e2e5ea; --fg:#1b1f27; --mut:#646b78; --acc:#1f6fd1; --ok:#16a065; --err:#d43c3c; --warn:#e0a800; --tasto:#eef1f5; }
   * { box-sizing:border-box; }
@@ -132,6 +137,7 @@
   <header>
     <strong>UNO Lab</strong>
     <span id="chip" class="chip">…</span>
+    <button id="btnInstalla" hidden>Installa</button>
     <button id="btnConnetti" class="primario">Collega</button>
   </header>
   <main>

@@ -1,6 +1,7 @@
 import { Link, browserSupportato, sleep } from "./link.js";
 import { leggiHex, programma } from "./flasher.js";
 import { PROGETTI, LIVELLI, h } from "./progetti.js";
+import { VERSIONE } from "./versione.js";
 
 const link = new Link();
 const stato = {
@@ -95,7 +96,7 @@ async function carica(id) {
   stato.inCarica = id; stato.progresso = 0; stato.fase = "Scarico il firmware…"; stato.errore = "";
   disegna();
   try {
-    const r = await fetch(`firmware/${id}.hex`, { cache: "no-cache" });
+    const r = await fetch(`firmware/${id}.hex?v=${VERSIONE}`, { cache: "no-store" });
     if (!r.ok) throw new Error("firmware non trovato sul server");
     const img = leggiHex(await r.text());
     log(`Carico «${p.nome}» (${img.length} byte)…`);
@@ -143,7 +144,7 @@ function schedaProgetto(p) {
     h("details", {},
       h("summary", {}, "Collegamenti"),
       h("ul", {}, ...p.collegamenti.map(c => h("li", {}, c))),
-      h("a", { class: "guida", href: `guide/${p.id}.pdf`, target: "_blank" }, "📄 Guida PDF con disegni")),
+      h("a", { class: "guida", href: `guide/${p.id}.pdf?v=${VERSIONE}`, target: "_blank" }, "📄 Guida PDF con disegni")),
     inCorso
       ? h("div", {}, h("div", { class: "progresso" }, h("div", {})), h("p", { class: "fase" }, stato.fase))
       : h("div", { class: "riga" },
@@ -199,7 +200,7 @@ function vistaProgetto(p) {
   figli.push(corpo,
     h("details", { class: "card" }, h("summary", {}, "Collegamenti"),
       h("ul", {}, ...p.collegamenti.map(c => h("li", {}, c))),
-      h("a", { class: "guida", href: `guide/${p.id}.pdf`, target: "_blank" }, "📄 Guida PDF con disegni")));
+      h("a", { class: "guida", href: `guide/${p.id}.pdf?v=${VERSIONE}`, target: "_blank" }, "📄 Guida PDF con disegni")));
   const api = {
     invia: s => link.inviaRiga(s).catch(e => log("Errore invio: " + e.message)),
     onRiga: f => ascoltatori.push(f),
@@ -224,3 +225,23 @@ aggiornaBarra();
 disegna();
 // se la scheda è già stata autorizzata in passato, si ricollega da sola
 if (browserSupportato()) connetti(true);
+
+// ------------------------------------------------------------------ PWA
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js").catch(e => log("Service worker: " + e.message));
+}
+let richiestaInstalla = null;
+const $inst = document.getElementById("btnInstalla");
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault();
+  richiestaInstalla = e;
+  $inst.hidden = false;
+});
+$inst.onclick = async () => {
+  if (!richiestaInstalla) return;
+  richiestaInstalla.prompt();
+  await richiestaInstalla.userChoice;
+  richiestaInstalla = null;
+  $inst.hidden = true;
+};
+window.addEventListener("appinstalled", () => { $inst.hidden = true; });
