@@ -1,0 +1,46 @@
+# Compila gli sketch in sketches/<id>/<id>.ino e salva i .hex in public/firmware/
+# Parte da solo quando modifichi qualcosa in sketches/, oppure a mano da "Actions".
+name: Compila firmware
+
+on:
+  push:
+    paths: ["sketches/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installa arduino-cli
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=$HOME/bin sh
+          echo "$HOME/bin" >> $GITHUB_PATH
+
+      - name: Installa core AVR e librerie
+        run: |
+          arduino-cli core update-index
+          arduino-cli core install arduino:avr
+          arduino-cli lib install Servo
+
+      - name: Compila
+        run: |
+          mkdir -p public/firmware
+          for dir in sketches/*/; do
+            id=$(basename "$dir")
+            echo "::group::$id"
+            arduino-cli compile --fqbn arduino:avr:uno --output-dir "build/$id" "$dir"
+            cp "build/$id/$id.ino.hex" "public/firmware/$id.hex"
+            echo "::endgroup::"
+          done
+
+      - name: Salva i .hex nel repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/firmware
+          git diff --cached --quiet || (git commit -m "Firmware compilati" && git push)

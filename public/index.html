@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<title>UNO Lab</title>
+<style>
+  :root { --bg:#0f1115; --card:#1a1d24; --bordo:#2a2f3a; --fg:#e8eaf0; --mut:#8a90a0; --acc:#4fa3ff; --ok:#3ecf8e; --err:#ff6b6b; --warn:#f5c542; }
+  * { box-sizing:border-box; }
+  html { -webkit-tap-highlight-color:transparent; }
+  body { margin:0; font-family:system-ui,-apple-system,Roboto,sans-serif; background:var(--bg); color:var(--fg); }
+  header { position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:10px; padding:12px 16px;
+           background:rgba(15,17,21,.92); backdrop-filter:blur(8px); border-bottom:1px solid var(--bordo); }
+  header strong { font-size:1.1rem; }
+  .chip { flex:1; font-size:.8rem; color:var(--mut); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .chip.on { color:var(--ok); } .chip.err { color:var(--err); }
+  main { max-width:520px; margin:0 auto; padding:16px; display:flex; flex-direction:column; gap:14px; }
+  h1 { font-size:1.4rem; margin:0; } h2 { font-size:1.05rem; margin:0 0 4px; display:flex; align-items:center; gap:8px; }
+  p { margin:0; }
+  #app { display:flex; flex-direction:column; gap:14px; }
+  .card { background:var(--card); border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:12px; }
+  .card.avviso { border:1px solid #4a4020; color:#f0e0a8; }
+  .card.errore { border:1px solid #5a2a2a; color:#ffb4b4; }
+  .progetto.attivo { outline:2px solid var(--ok); }
+  .testa { display:flex; gap:12px; align-items:flex-start; }
+  .testa p { color:var(--mut); font-size:.9rem; line-height:1.35; }
+  .icona { font-size:1.8rem; line-height:1; }
+  .badge { font-size:.7rem; background:var(--ok); color:#06281a; padding:2px 8px; border-radius:99px; font-weight:700; }
+  details summary { cursor:pointer; color:var(--acc); font-size:.9rem; }
+  details ul { margin:8px 0 0; padding-left:20px; color:#cfd3dc; font-size:.9rem; line-height:1.6; }
+  button, select { font:inherit; border:0; border-radius:12px; padding:12px 14px; background:#2a2f3a; color:var(--fg); cursor:pointer; }
+  button.primario { background:var(--acc); color:#fff; font-weight:600; }
+  button:disabled { opacity:.4; cursor:default; }
+  button.largo { width:100%; padding:16px; }
+  button.indietro { align-self:flex-start; background:none; color:var(--acc); padding:4px 0; }
+  .riga { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .riga > button { flex:1; }
+  .griglia3, .griglia5, .griglia7 { display:grid; gap:8px; }
+  .griglia3 { grid-template-columns:repeat(3,1fr); } .griglia5 { grid-template-columns:repeat(5,1fr); }
+  .griglia7 { grid-template-columns:repeat(7,1fr); }
+  .griglia5 button { padding:12px 0; }
+  .progresso { height:10px; background:#2a2f3a; border-radius:99px; overflow:hidden; }
+  .progresso > div { height:100%; width:0; background:var(--acc); transition:width .15s; }
+  .fase { font-size:.85rem; color:var(--mut); }
+  .grande { text-align:center; font-size:2.6rem; font-weight:700; font-variant-numeric:tabular-nums; }
+  .etichetta { font-size:.85rem; color:var(--mut); display:flex; flex-direction:column; gap:4px; }
+  input[type=range] { width:100%; height:40px; accent-color:var(--acc); }
+  input[type=color] { width:64px; height:64px; border:0; background:none; padding:0; }
+  .anteprima { flex:1; height:64px; border-radius:12px; background:#000; border:1px solid var(--bordo); }
+  .campione { aspect-ratio:1; padding:0; border:2px solid var(--bordo); }
+  .quadrante { position:relative; width:220px; height:120px; margin:0 auto; overflow:hidden;
+               border-radius:220px 220px 0 0; background:#22262f; }
+  .lancetta { position:absolute; left:107px; bottom:0; width:6px; height:100px; background:var(--acc);
+              border-radius:3px; transform-origin:50% 100%; transition:transform .1s; }
+  .perno { position:absolute; left:100px; bottom:-10px; width:20px; height:20px; border-radius:50%; background:var(--fg); }
+  .barra { height:14px; background:#2a2f3a; border-radius:99px; overflow:hidden; }
+  .barra-piena { height:100%; width:0; background:var(--warn); }
+  .grafico { width:100%; height:auto; background:#14171d; border-radius:12px; }
+  .tastiera { display:grid; grid-template-columns:repeat(8,1fr); gap:4px; }
+  .tasto { background:#f2f2f2; color:#111; height:130px; padding:0 0 10px; display:flex; align-items:flex-end;
+           justify-content:center; font-weight:600; font-size:.8rem; border-radius:0 0 10px 10px; touch-action:manipulation; }
+  .tasto:active { background:var(--acc); color:#fff; }
+  #registro summary { font-size:.85rem; color:var(--mut); }
+  #log { font:12px/1.4 ui-monospace,monospace; color:var(--mut); max-height:180px; overflow:auto; white-space:pre-wrap; margin:8px 0 0; }
+</style>
+</head>
+<body>
+  <header>
+    <strong>UNO Lab</strong>
+    <span id="chip" class="chip">…</span>
+    <button id="btnConnetti" class="primario">Collega</button>
+  </header>
+  <main>
+    <div id="app"></div>
+    <details id="registro" class="card"><summary>Registro comunicazioni</summary><pre id="log"></pre></details>
+  </main>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
