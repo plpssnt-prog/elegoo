@@ -161,9 +161,9 @@ export const PROGETTI = [
       function disegna() {
         const w = canvas.width, hh = canvas.height;
         ctx.clearRect(0, 0, w, hh);
-        ctx.strokeStyle = "#2a2f3a"; ctx.lineWidth = 1;
+        ctx.strokeStyle = "#e2e5ea"; ctx.lineWidth = 1;
         for (let i = 1; i < 4; i++) { ctx.beginPath(); ctx.moveTo(0, hh * i / 4); ctx.lineTo(w, hh * i / 4); ctx.stroke(); }
-        ctx.strokeStyle = "#f5c542"; ctx.lineWidth = 3; ctx.beginPath();
+        ctx.strokeStyle = "#e0a800"; ctx.lineWidth = 3; ctx.beginPath();
         dati.forEach((v, i) => {
           const x = i / 199 * w, y = hh - v / 1023 * hh;
           i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
