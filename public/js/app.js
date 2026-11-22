@@ -138,7 +138,7 @@ function schedaProgetto(p) {
     h("div", { class: "testa" },
       h("span", { class: "icona" }, p.icona),
       h("div", {},
-        h("h2", {}, h("span", { class: "num" }, p.n), p.nome, sopra ? h("span", { class: "badge" }, "caricato") : null),
+        h("h2", {}, h("span", { class: "num" }, p.n), p.nome, p.autonomo ? h("span", { title: "funziona anche a batteria" }, "🔋") : null, sopra ? h("span", { class: "badge" }, "caricato") : null),
         h("p", {}, p.descr))),
     h("details", {},
       h("summary", {}, "Collegamenti"),
@@ -189,6 +189,12 @@ function vistaProgetto(p) {
       h("p", {}, "Sulla scheda c'è un altro programma: questi comandi non funzioneranno."),
       h("button", { class: "primario", onclick: () => { location.hash = "#/"; carica(p.id); } },
         "Carica «" + p.nome + "»")));
+  }
+  if (p.autonomo) {
+    figli.push(h("div", { class: "card info-batteria" },
+      h("b", {}, "🔋 Funziona anche senza telefono"),
+      h("p", {}, "Dopo averlo caricato puoi staccare il cavo e collegare la batteria 9V alla presa tonda della UNO: il progetto parte da solo. "
+        + "Quando invece è collegato al telefono, qui sotto vedi in diretta cosa succede.")));
   }
   figli.push(corpo,
     h("details", { class: "card" }, h("summary", {}, "Collegamenti"),

@@ -858,7 +858,283 @@ export const PROGETTI = [
       return () => api.invia("X");
     },
   },
+  // ================================================================ LIVELLO 5 · AUTONOMI
+
+  // ---------------------------------------------------------------- PARCHEGGIO
+  {
+    id: "parcheggio",
+    n: 18, livello: 5, autonomo: true,
+    icona: "🚗",
+    nome: "Sensore di parcheggio",
+    descr: "Come in auto: più ti avvicini al sensore, più il bip è veloce e il LED passa da verde a rosso.",
+    collegamenti: [
+      "HC-SR04: Vcc → riga +, Gnd → riga –, Trig → pin 12, Echo → pin 11",
+      "Buzzer PASSIVO: + → pin 8, altro → riga –",
+      "LED verde → pin 5, giallo → pin 6, rosso → pin 7 (corto → 220 Ω → riga –)",
+      "5V della UNO → riga +, GND → riga –",
+    ],
+    monta(el, api) {
+      const dist = h("div", { class: "grande" }, "–");
+      const zone = ["Via libera", "Attenzione", "Vicino!", "STOP"];
+      const colori = ["#16a065", "#e0a800", "#e06a00", "#d43c3c"];
+      const stato = h("div", { class: "stato-allarme" }, "–");
+      const barre = colori.map(c => h("div", { class: "arco", style: `--c:${c}` }));
+      el.append(h("div", { class: "archi" }, ...barre), dist, stato);
+      api.onRiga(l => {
+        const m = l.match(/^D (-?[\d.]+) (\d)/);
+        if (!m) return;
+        const cm = parseFloat(m[1]), z = +m[2];
+        dist.textContent = cm < 0 ? "fuori portata" : cm.toFixed(0) + " cm";
+        stato.textContent = zone[z];
+        stato.style.background = colori[z] + "22"; stato.style.color = colori[z];
+        barre.forEach((b, i) => b.classList.toggle("on", i <= z));
+      });
+    },
+  },
+
+  // ---------------------------------------------------------------- TERMOMETRO
+  {
+    id: "termometro",
+    n: 19, livello: 5, autonomo: true,
+    icona: "🌡️",
+    nome: "Termometro con LCD",
+    descr: "Temperatura, umidità, minima e massima sempre visibili sul display LCD, anche a batteria.",
+    collegamenti: [
+      "Display LCD e potenziometro come nel progetto 15",
+      "DHT11: S → pin 2, + → riga +, – → riga –",
+    ],
+    monta(el, api) {
+      const lcd = h("div", { class: "lcdbox" }, h("div", {}, "Termometro       "), h("div", {}, "avvio...         "));
+      const t = h("div", { class: "grande" }, "–"), u = h("div", { class: "grande" }, "–");
+      const mm = h("p", { class: "etichetta centro" }, "");
+      el.append(lcd,
+        h("div", { class: "griglia2" },
+          h("div", { class: "misura" }, h("p", { class: "etichetta" }, "Temperatura"), t),
+          h("div", { class: "misura" }, h("p", { class: "etichetta" }, "Umidità"), u)),
+        mm, h("button", { onclick: () => api.invia("Z") }, "Azzera minima e massima"));
+      api.onRiga(l => {
+        const m = l.match(/^T (-?\d+) (-?\d+) (-?\d+) (-?\d+)/);
+        if (!m) return;
+        if (+m[1] < -50) { t.textContent = u.textContent = "–"; mm.textContent = "Il DHT11 non risponde: controlla i 3 fili."; return; }
+        t.textContent = m[1] + " °C"; u.textContent = m[2] + " %";
+        mm.textContent = `minima ${m[3]} °C · massima ${m[4]} °C`;
+        lcd.children[0].textContent = `${m[1].padStart(3)}°C  Umid ${m[2].padStart(2)}% `;
+        lcd.children[1].textContent = `min ${m[3].padStart(2)}  max ${m[4].padStart(2)}  `;
+      });
+    },
+  },
+
+  // ---------------------------------------------------------------- SIMON
+  {
+    id: "simon",
+    n: 20, livello: 5, autonomo: true,
+    icona: "🎮",
+    nome: "Gioco Simon",
+    descr: "Il gioco della memoria: la UNO accende una sequenza di luci e suoni, tu la ripeti con i pulsanti.",
+    collegamenti: [
+      "LED rosso → pin 2, verde → pin 3, blu → pin 4, giallo → pin 5 (corto → 220 Ω → riga –)",
+      "Pulsanti: rosso → pin 6, verde → pin 7, blu → pin 8, giallo → pin 9 (opposto in diagonale → riga –)",
+      "Buzzer PASSIVO: + → pin 10, altro → riga –",
+      "GND della UNO → riga –",
+    ],
+    monta(el, api) {
+      const STATI = ["Premi un pulsante per iniziare", "Guarda e ascolta…", "Tocca a te!", "Sbagliato! 😵"];
+      const stato = h("div", { class: "stato-allarme" }, "–");
+      const liv = h("div", { class: "grande" }, "0"), rec = h("div", { class: "grande" }, "0");
+      el.append(stato,
+        h("div", { class: "griglia2" },
+          h("div", { class: "misura" }, h("p", { class: "etichetta" }, "Livello"), liv),
+          h("div", { class: "misura" }, h("p", { class: "etichetta" }, "Record 🏆"), rec)),
+        h("p", { class: "etichetta" }, "Il record resta salvato sulla scheda anche quando la spegni."),
+        h("button", { onclick: () => { if (confirm("Azzerare il record?")) api.invia("Z"); } }, "Azzera il record"));
+      api.onRiga(l => {
+        const m = l.match(/^S (\d) (\d+) (\d+)/);
+        if (!m) return;
+        stato.textContent = STATI[+m[1]];
+        stato.className = "stato-allarme" + (m[1] === "2" ? " attivo" : m[1] === "3" ? " allarme" : "");
+        liv.textContent = m[2]; rec.textContent = m[3];
+      });
+    },
+  },
+
+  // ---------------------------------------------------------------- DADO
+  {
+    id: "dado",
+    n: 21, livello: 5, autonomo: true,
+    icona: "🎲",
+    nome: "Dado elettronico",
+    descr: "Scuoti la breadboard: il sensore di inclinazione se ne accorge e il display tira un dado da 1 a 6.",
+    collegamenti: [
+      "74HC595 e display a 7 segmenti come nel progetto 14",
+      "Sensore di inclinazione: un piedino → pin 2, l'altro → riga –",
+    ],
+    monta(el, api) {
+      const PUNTI = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
+      const celle = Array.from({ length: 9 }, () => h("div", { class: "pip" }));
+      const faccia = h("div", { class: "dado" }, ...celle);
+      const info = h("p", { class: "etichetta centro" }, "Scuoti la breadboard tre volte di fila");
+      const mostra = n => celle.forEach((c, i) => c.classList.toggle("on", PUNTI[n]?.includes(i)));
+      const storia = [];
+      const st = h("p", { class: "etichetta centro" }, "");
+      el.append(faccia, info, st,
+        h("button", { class: "primario", onclick: () => api.invia("R") }, "🎲 Tira dal telefono"),
+        h("details", {}, h("summary", {}, "Il display mostra numeri strani o resta spento?"),
+          h("p", { class: "etichetta" }, "Alcuni display sono «ad anodo comune»: in quel caso i piedini centrali vanno alla riga + invece che alla –, e scegli qui sotto l'altra modalità."),
+          h("div", { class: "riga" },
+            h("button", { onclick: () => api.invia("K0") }, "Catodo comune"),
+            h("button", { onclick: () => api.invia("K1") }, "Anodo comune"))));
+      let anim = null;
+      api.onRiga(l => {
+        if (l === "L") {
+          info.textContent = "Lancio…";
+          clearInterval(anim); anim = setInterval(() => mostra(1 + Math.floor(Math.random() * 6)), 80);
+          return;
+        }
+        const m = l.match(/^N (\d)/);
+        if (!m) return;
+        clearInterval(anim); mostra(+m[1]);
+        info.textContent = "È uscito " + m[1];
+        storia.unshift(m[1]); storia.length = Math.min(storia.length, 12);
+        st.textContent = "Ultimi lanci: " + storia.join(" · ");
+      });
+      return () => clearInterval(anim);
+    },
+  },
+
+  // ---------------------------------------------------------------- METRO
+  {
+    id: "metro",
+    n: 22, livello: 5, autonomo: true,
+    icona: "📏",
+    nome: "Metro portatile",
+    descr: "Misura le distanze con gli ultrasuoni e le scrive sul display LCD; un pulsante blocca la misura.",
+    collegamenti: [
+      "Display LCD e potenziometro come nel progetto 15",
+      "HC-SR04: Vcc → riga +, Gnd → riga –, Trig → pin 2, Echo → pin 3",
+      "Pulsante «blocca»: un piedino → pin 4, quello opposto in diagonale → riga –",
+    ],
+    monta(el, api) {
+      const lcd = h("div", { class: "lcdbox" }, h("div", {}, "Metro UNO Lab    "), h("div", {}, "                "));
+      const dist = h("div", { class: "grande" }, "–");
+      const blocca = h("button", { class: "primario", onclick: () => api.invia("B") }, "Blocca la misura");
+      el.append(lcd, dist, blocca, h("p", { class: "etichetta" }, "La barra sul display arriva a 2 metri. Il sensore misura bene da 3 cm a circa 3 metri, su superfici piatte."));
+      api.onRiga(l => {
+        const m = l.match(/^D (-?[\d.]+) ([01])/);
+        if (!m) return;
+        const cm = parseFloat(m[1]), b = m[2] === "1";
+        dist.textContent = cm < 0 ? "fuori portata" : cm.toFixed(1) + " cm";
+        blocca.textContent = b ? "Sblocca" : "Blocca la misura";
+        const r1 = cm < 0 ? "Fuori portata" : `${cm.toFixed(1).padStart(5)} cm  ${b ? "[STOP]" : ""}`;
+        const n = cm < 0 ? 0 : Math.max(0, Math.min(16, Math.round(cm / 200 * 16)));
+        lcd.children[0].textContent = r1.padEnd(16);
+        lcd.children[1].textContent = "█".repeat(n).padEnd(16);
+      });
+    },
+  },
+
+  // ---------------------------------------------------------------- LAMPADA
+  {
+    id: "lampada",
+    n: 23, livello: 5, autonomo: true,
+    icona: "🌙",
+    nome: "Lampada notturna",
+    descr: "Quando fa buio i LED si accendono piano piano da soli; con la manopola scegli quanto buio deve fare.",
+    collegamenti: [
+      "Fotoresistenza: riga + → fotoresistenza → A0 → resistenza 10 kΩ → riga –",
+      "Potenziometro: esterni → riga + e riga –, centrale → A1",
+      "2 LED bianchi → pin 9 e pin 10 (corto → 220 Ω → riga –)",
+      "5V della UNO → riga +, GND → riga –",
+    ],
+    monta(el, api) {
+      const luce = h("div", { class: "barra-piena" }), soglia = h("div", { class: "soglia" });
+      const lamp = h("div", { class: "lampada grande-l" });
+      const testo = h("p", { class: "etichetta centro" }, "–");
+      el.append(lamp, testo,
+        h("p", { class: "etichetta" }, "Luce nella stanza (la linea è la soglia scelta con la manopola)"),
+        h("div", { class: "barra rel" }, luce, soglia),
+        h("p", { class: "etichetta" }, "Copri la fotoresistenza con la mano per simulare il buio."));
+      api.onRiga(l => {
+        const m = l.match(/^L (\d+) (\d+) (\d+)/);
+        if (!m) return;
+        const [v, s, b] = [+m[1], +m[2], +m[3]];
+        luce.style.width = v / 1023 * 100 + "%";
+        soglia.style.left = s / 1023 * 100 + "%";
+        lamp.style.background = `rgba(255,214,90,${0.08 + b / 255 * 0.92})`;
+        lamp.style.boxShadow = b ? `0 0 ${10 + b / 6}px rgba(255,200,60,.8)` : "none";
+        testo.textContent = b ? `LED accesi al ${Math.round(b / 255 * 100)}%` : "LED spenti: c'è abbastanza luce";
+      });
+    },
+  },
+
+  // ---------------------------------------------------------------- CRONOMETRO
+  {
+    id: "cronometro",
+    n: 24, livello: 5, autonomo: true,
+    icona: "⏱️",
+    nome: "Cronometro a 4 cifre",
+    descr: "Un cronometro vero sul display a 4 cifre, con i pulsanti avvia/ferma e azzera.",
+    collegamenti: [
+      "74HC595 come nel progetto 13; uscite → resistenza 1 kΩ → segmenti (Q0 a … Q6 g, Q7 punto)",
+      "Display: cifre D1 → pin 2, D2 → pin 3, D3 → pin 4, D4 → pin 5",
+      "Pulsante avvia/ferma → pin 6, azzera → pin 7 (opposto in diagonale → riga –)",
+    ],
+    monta(el, api) {
+      const disp = h("div", { class: "cifre4" }, "00.00");
+      const corre = h("p", { class: "etichetta centro" }, "–");
+      el.append(disp, corre,
+        h("div", { class: "riga" },
+          h("button", { class: "primario", onclick: () => api.invia("S") }, "Avvia / ferma"),
+          h("button", { onclick: () => api.invia("Z") }, "Azzera")),
+        h("details", {}, h("summary", {}, "Il display è spento o mostra segni strani?"),
+          h("p", { class: "etichetta" }, "Se il tuo display è «ad anodo comune» scegli l'altra modalità qui sotto (resta salvata sulla scheda)."),
+          h("div", { class: "riga" },
+            h("button", { onclick: () => api.invia("K0") }, "Catodo comune"),
+            h("button", { onclick: () => api.invia("K1") }, "Anodo comune"))));
+      api.onRiga(l => {
+        const m = l.match(/^C (\d+) ([01])/);
+        if (!m) return;
+        const t = +m[1];
+        if (t < 100000) disp.textContent = (t / 1000).toFixed(2).padStart(5, "0");
+        else { const s = Math.floor(t / 1000); disp.textContent = String(Math.floor(s / 60) % 100).padStart(2, "0") + "." + String(s % 60).padStart(2, "0"); }
+        corre.textContent = m[2] === "1" ? "In corsa" : "Fermo";
+      });
+    },
+  },
+
+  // ---------------------------------------------------------------- SERVO + TELECOMANDO
+  {
+    id: "servoir",
+    n: 25, livello: 5, autonomo: true,
+    icona: "🛰️",
+    nome: "Servo col telecomando",
+    descr: "Muovi il servo con i tasti del telecomando a infrarossi, senza telefono.",
+    collegamenti: [
+      "5V della UNO → riga +, GND → riga –",
+      "Servo: rosso → riga +, marrone → riga –, arancione → pin 9",
+      "Ricevitore IR: G → riga –, R → riga +, Y → pin 11",
+    ],
+    monta(el, api) {
+      const lancetta = h("div", { class: "lancetta" });
+      const valore = h("div", { class: "grande" }, "–");
+      const auto = h("p", { class: "etichetta centro" }, "");
+      el.append(h("div", { class: "quadrante" }, lancetta, h("div", { class: "perno" })), valore, auto,
+        h("ul", { class: "legenda-tasti" },
+          h("li", {}, h("b", {}, "0 … 9"), " angolo da 0° a 180°"),
+          h("li", {}, h("b", {}, "⏮ ⏭"), " ±10°"),
+          h("li", {}, h("b", {}, "VOL– VOL+"), " ±1°"),
+          h("li", {}, h("b", {}, "⏯"), " movimento automatico avanti e indietro"),
+          h("li", {}, h("b", {}, "⏻"), " torna al centro")));
+      api.onRiga(l => {
+        const m = l.match(/^A (\d+) ([01])/);
+        if (!m) return;
+        valore.textContent = m[1] + "°";
+        lancetta.style.transform = `rotate(${+m[1] - 90}deg)`;
+        auto.textContent = m[2] === "1" ? "Movimento automatico attivo" : "";
+      });
+      setTimeout(() => api.invia("?"), 50);
+    },
+  },
 ];
 
 PROGETTI.sort((a, b) => a.n - b.n);
-export const LIVELLI = ["", "Livello 1 · Primi passi", "Livello 2 · Sensori", "Livello 3 · Moduli e chip", "Livello 4 · Motori"];
+export const LIVELLI = ["", "Livello 1 · Primi passi", "Livello 2 · Sensori", "Livello 3 · Moduli e chip", "Livello 4 · Motori", "Livello 5 · Progetti autonomi (anche a batteria)"];
