@@ -142,7 +142,8 @@ function schedaProgetto(p) {
         h("p", {}, p.descr))),
     h("details", {},
       h("summary", {}, "Collegamenti"),
-      h("ul", {}, ...p.collegamenti.map(c => h("li", {}, c)))),
+      h("ul", {}, ...p.collegamenti.map(c => h("li", {}, c))),
+      h("a", { class: "guida", href: `guide/${p.id}.pdf`, target: "_blank" }, "📄 Guida PDF con disegni")),
     inCorso
       ? h("div", {}, h("div", { class: "progresso" }, h("div", {})), h("p", { class: "fase" }, stato.fase))
       : h("div", { class: "riga" },
@@ -187,7 +188,8 @@ function vistaProgetto(p) {
   }
   figli.push(corpo,
     h("details", { class: "card" }, h("summary", {}, "Collegamenti"),
-      h("ul", {}, ...p.collegamenti.map(c => h("li", {}, c)))));
+      h("ul", {}, ...p.collegamenti.map(c => h("li", {}, c))),
+      h("a", { class: "guida", href: `guide/${p.id}.pdf`, target: "_blank" }, "📄 Guida PDF con disegni")));
   const api = {
     invia: s => link.inviaRiga(s).catch(e => log("Errore invio: " + e.message)),
     onRiga: f => ascoltatori.push(f),

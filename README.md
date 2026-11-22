@@ -11,6 +11,7 @@ Web app per caricare progetti di test sulla Elegoo UNO R3 dal telefono (Chrome s
 ```
 sketches/<id>/<id>.ino     sorgente di ogni progetto
 public/firmware/<id>.hex   firmware compilati (li genera la GitHub Action)
+public/guide/<id>.pdf      guida per principianti con i disegni dei collegamenti
 public/js/progetti.js      elenco progetti + pagine di comando
 public/js/flasher.js       programmazione della UNO
 public/js/link.js          collegamento WebUSB / Web Serial
