@@ -2,7 +2,7 @@
 // Collegamenti:
 //   display LCD esattamente come nel progetto "lcd" (RS 7, E 8, D4-D7 9-12, potenziometro del contrasto)
 //   HC-SR04: Vcc -> riga +, Gnd -> riga –, Trig -> pin 2, Echo -> pin 3
-//   pulsante "blocca": un piedino -> pin 4, quello opposto in diagonale -> riga –
+//   pulsante "blocca" (con due cavetti maschio-femmina): un piedino -> pin 4, quello opposto in diagonale -> riga –
 // Il pulsante blocca la misura sul display (premi di nuovo per sbloccare).
 // Invio: "D <cm> <bloccato 0/1>"
 #include <Arduino.h>

@@ -711,10 +711,11 @@ export const PROGETTI = [
     nome: "Display LCD",
     descr: "Scrivi dal telefono due righe di testo sul display LCD 16×2, oppure mostra l'ora.",
     collegamenti: [
-      "Display nella breadboard, 16 piedini numerati da sinistra; potenziometro per il contrasto",
-      "1 → –, 2 → +, 3 → centrale potenziometro, 4 → pin 7, 5 → –, 6 → pin 8",
-      "11 → pin 9, 12 → pin 10, 13 → pin 11, 14 → pin 12",
-      "15 → resistenza 220 Ω → +, 16 → –; potenziometro: esterni a + e –",
+      "Righe a-e verso di te. Display con i piedini nella riga e, colonne 12-27: K (16) in colonna 12, VSS (1) in colonna 27",
+      "I fili nelle righe a-d, dalla stessa parte della scanalatura dei piedini",
+      "VSS, RW, K → riga –; VDD → riga +; A → resistenza 220 Ω → riga +",
+      "V0 → centrale del potenziometro (colonne 3-5-7, esterni a + e –)",
+      "RS → pin 7, E → pin 8, D4 → pin 9, D5 → pin 10, D6 → pin 11, D7 → pin 12",
       "Se non vedi niente gira il potenziometro: regola il contrasto.",
     ],
     monta(el, api) {
@@ -1011,7 +1012,7 @@ export const PROGETTI = [
     collegamenti: [
       "Display LCD e potenziometro come nel progetto 15",
       "HC-SR04: Vcc → riga +, Gnd → riga –, Trig → pin 2, Echo → pin 3",
-      "Pulsante «blocca»: un piedino → pin 4, quello opposto in diagonale → riga –",
+      "Pulsante «blocca» fuori dalla breadboard, con due cavetti maschio-femmina: un piedino → pin 4, quello opposto in diagonale → riga –",
     ],
     monta(el, api) {
       const lcd = h("div", { class: "lcdbox" }, h("div", {}, "Metro UNO Lab    "), h("div", {}, "                "));

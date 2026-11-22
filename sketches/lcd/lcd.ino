@@ -1,5 +1,5 @@
 // UNO Lab — progetto "lcd": display LCD 1602 (16 caratteri x 2 righe).
-// Collegamenti (piedini del display numerati da 1 a 16, da sinistra):
+// Collegamenti (piedini numerati da 1 = VSS a 16 = K: i nomi sono stampati sul display):
 //   1 VSS -> GND   2 VDD -> 5V   3 V0 -> piedino centrale del potenziometro (contrasto)
 //   4 RS -> pin 7  5 RW -> GND   6 E -> pin 8
 //   11 D4 -> pin 9   12 D5 -> pin 10   13 D6 -> pin 11   14 D7 -> pin 12
