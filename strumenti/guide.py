@@ -713,10 +713,10 @@ def ponticello(p0, p1, col=BLK):
     wire(p0, p1, col, w=2.6)
 
 
-def led_bb(foro, ca, colore, nome=None):
-    """LED nella metà bassa: anodo (lungo) in colonna ca, catodo in ca+1, piedini in riga c."""
-    pa, pk = foro(ca, "h"), foro(ca + 1, "h")
-    cx, cy = (pa[0] + pk[0]) / 2, foro(ca, "f")[1] + 4
+def led_bb(foro, ca, colore, nome=None, gambe="h", corpo="f"):
+    """LED nella metà bassa: anodo (lungo) in colonna ca, catodo in ca+1."""
+    pa, pk = foro(ca, gambe), foro(ca + 1, gambe)
+    cx, cy = (pa[0] + pk[0]) / 2, foro(ca, corpo)[1] + 4
     c.setStrokeColor(HexColor("#9a9a9a")); c.setLineWidth(1.8)
     c.line(pa[0], cy, pa[0], pa[1]); c.line(pk[0], cy, pk[0], pk[1])
     c.setFillColor(HexColor("#9a9a9a")); c.circle(*pa, 2.2, stroke=0, fill=1); c.circle(*pk, 2.2, stroke=0, fill=1)
@@ -1392,7 +1392,7 @@ def col_lcd(n):
     return 28 - n
 
 
-def dis_lcd(x0=28, ncol=31, pulsante=False):
+def dis_lcd(x0=28, ncol=31, pulsante=False, pot=3):
     foro = bb(x0, 300, ncol, sopra=False, inverti=True)
     p = uno(70, 40, hl={"D7": AZZ, "D8": VIOLA, "D9": ORANGE, "D10": GREEN, "D11": ROSA, "D12": YEL, "GNDT": BLK, "5V": RED}, s=0.82)
     # display: piedini nella riga e (accanto alla scanalatura), corpo sopra la metà lontana, capovolto
@@ -1415,15 +1415,16 @@ def dis_lcd(x0=28, ncol=31, pulsante=False):
     text(foro(27, "f")[0] + 8, ye + 12, "1", 6, "SB", white, "l")
     text(foro(12, "f")[0] - 8, ye + 12, "16", 6, "SB", white, "r")
     # potenziometro del contrasto: colonne 3-5-7, piedini in riga c
-    legs = [foro(cc, "i") for cc in (3, 5, 7)]
-    cy = foro(5, "h")[1] + 4
+    legs = [foro(cc, "i") for cc in (pot, pot + 2, pot + 4)]
+    cy = foro(pot + 2, "h")[1] + 4
     c.setStrokeColor(HexColor("#9a9a9a")); c.setLineWidth(1.8)
     for q in legs: c.line(q[0], cy, q[0], q[1])
     c.setFillColor(HexColor("#2a5fb0")); c.roundRect(legs[1][0] - 24, cy - 8, 48, 20, 3, stroke=0, fill=1)
     c.setFillColor(HexColor("#222222")); c.circle(legs[1][0], cy + 2, 8, stroke=0, fill=1)
     text(legs[1][0], cy + 16, "contrasto", 6.5, "SB", GREY, "c")
-    ponticello(foro(3, "j"), foro(3, "+b"), RED); ponticello(foro(7, "j"), foro(7, "-b"), BLK)
-    wire(foro(5, "j"), foro(col_lcd(3), "i"), ORANGE, (foro(5, "j")[0] + 60, foro(5, "j")[1] - 2), (foro(col_lcd(3), "i")[0] - 60, foro(col_lcd(3), "i")[1] - 6), w=2.2)
+    ponticello(foro(pot, "j"), foro(pot, "+b"), RED); ponticello(foro(pot + 4, "j"), foro(pot + 4, "-b"), BLK)
+    dx = 60 if pot < col_lcd(3) else -60
+    wire(foro(pot + 2, "j"), foro(col_lcd(3), "i"), ORANGE, (foro(pot + 2, "j")[0] + dx, foro(pot + 2, "j")[1] - 2), (foro(col_lcd(3), "i")[0] - dx, foro(col_lcd(3), "i")[1] - 6), w=2.2)
     # alimentazione del display
     for n in (1, 5, 16):
         ponticello(foro(col_lcd(n), "j"), foro(col_lcd(n), "-b"), BLK)
@@ -2013,21 +2014,81 @@ def guida_servoir():
          ("Risponde solo ogni tanto", "Il servo disturba un po' il ricevitore: tieni i loro fili separati.")])
 
 
+
+
+# ------------------------------------------------------------------ 26 STAZIONE (19 + 22)
+def guida_stazione():
+    def dis():
+        foro, p = dis_lcd(x0=12, ncol=33, pot=29)
+        for ca, hexc, col, pn in [(2, "#2fb35a", GREEN, "A0"), (5, "#f2c230", YEL, "A1"), (8, "#e33b3b", RED, "A2")]:
+            led_bb(foro, ca, hexc, None, gambe="i", corpo="h")
+            res_vert(foro, ca + 1)
+            a = foro(ca, "j")
+            wire(a, p[pn], col, (a[0] - 30, 120), (p[pn][0] + 30 + ca * 3, 0), w=2.4)
+        etichetta(p["A0"][0] + 14, 20, "A0 · A1 · A2", GREEN)
+        s_ = sr04_modulo(415, 165)
+        wire(s_["Trig"], p["D3"], AZZ, (s_["Trig"][0], 100), (p["D3"][0] + 50, 280), w=2.4)
+        wire(s_["Echo"], p["D4"], ORANGE, (s_["Echo"][0], 90), (p["D4"][0] + 40, 285), w=2.4)
+        wire(s_["Vcc"], foro(27, "+b"), RED, (s_["Vcc"][0] - 20, 220), (foro(27, "+b")[0], foro(27, "+b")[1] - 20), w=2.4)
+        wire(s_["Gnd"], foro(28, "-b"), BLK, (s_["Gnd"][0] + 10, 225), (foro(28, "-b")[0], foro(28, "-b")[1] - 20), w=2.4)
+        dht = modulo(470, 62, 60, 76, "DHT11", ["S", "+", "–"], "#2b8ad8")
+        wire(dht["S"], p["D2"], BLUEW, (dht["S"][0] - 40, 20), (p["D2"][0] + 70, 270), w=2.4)
+        wire(dht["+"], foro(32, "+b"), RED, (dht["+"][0] + 70, 40), (foro(32, "+b")[0] + 20, foro(32, "+b")[1] - 40), w=2.4)
+        wire(dht["–"], foro(33, "-b"), BLK, (dht["–"][0] + 70, 30), (foro(33, "-b")[0] + 20, foro(33, "-b")[1] - 30), w=2.4)
+        bx, by = 380, 232
+        c.setFillColor(HexColor("#2b2b2b")); c.roundRect(bx - 12, by - 12, 24, 24, 3, stroke=0, fill=1)
+        c.setFillColor(HexColor("#555555")); c.circle(bx, by, 7, stroke=0, fill=1)
+        text(bx - 18, by - 3, "pagina", 7, "SB", GREY, "r")
+        wire((bx - 12, by - 12), p["D5"], VIOLA, (bx - 40, by - 30), (p["D5"][0] + 30, 260), w=2.4)
+        wire((bx + 12, by + 12), foro(25, "-b"), BLK, (bx + 30, by + 20), (foro(25, "-b")[0], foro(25, "-b")[1] - 10), w=2.4)
+        etichetta(p["D3"][0] + 30, 190, "2 · 3 · 4 · 5", AZZ)
+    return guida_autonoma("Stazione LCD: meteo + distanza", "Termometro e metro sullo stesso display, con LED per la distanza", 26,
+        ["il montaggio del display del progetto 15 (display, potenziometro, resistenza 220 Ω)",
+         "il DHT11, il sensore a ultrasuoni HC-SR04, 1 pulsante e 9 cavetti maschio-femmina",
+         "3 LED (verde, giallo, rosso) e 3 resistenze da 220 Ω",
+         "cavetti maschio-maschio e la batteria 9V con spinotto"],
+        [("Difficoltà", "Difficile"), ("Tempo", "1 ora"), ("Fili da collegare", "~28 + 4 resistenze")],
+        dis,
+        [("Display come nel progetto 15", "Righe a-e verso di te; piedini del display nella riga e, colonne 12-27 (VSS in colonna 27). Stessi fili: RS → 7, E → 8, D4-D7 → 9-12, VSS/RW/K → riga –, VDD → riga +, A → 220 Ω → riga +."),
+         ("Potenziometro del contrasto a destra", "Questa volta nelle colonne 29, 31, 33 (riga b), per lasciare spazio ai LED. Dalla riga a: 29 → riga +, 33 → riga –, centrale (31) → V0 (colonna 25)."),
+         ("3 LED a sinistra, riga b", "Verde: lungo in colonna 2, corto in 3. Giallo: 5-6. Rosso: 8-9. Ogni corto → resistenza 220 Ω → riga –. Dalla riga a: colonna 2 → A0, colonna 5 → A1, colonna 8 → A2."),
+         ("DHT11 (maschio-femmina)", "S → pin 2, + → riga +, – → riga –."),
+         ("Sensore HC-SR04 (maschio-femmina)", "Vcc → riga +, Gnd → riga –, Trig → pin 3, Echo → pin 4."),
+         ("Pulsante «pagina» fuori dalla breadboard", "Infila due piedini opposti in diagonale nei lati femmina di due cavetti: uno → pin 5, l'altro → riga –."),
+         ("Alimentazione", "5V della UNO → riga +, GND → riga –."),
+        ] + carica("«Stazione LCD»") + [
+         ("Usala", "Premi il pulsante per passare dalla pagina meteo (temperatura, umidità, minima e massima) alla pagina distanza (centimetri e barra fino a 2 m). I LED mostrano sempre la distanza: verde oltre 50 cm, giallo tra 50 e 20, rosso sotto 20."),
+        ],
+        TAB_LCD[:-2] + [
+         ("Potenziometro, esterni", "riga + e riga –", "col. 29 e 33"), ("Potenziometro, centrale (col. 31)", "V0 (col. 25)", ""),
+         ("LED verde / giallo / rosso, lunghi", "A0 / A1 / A2", "col. 2, 5, 8"), ("LED, corti", "220 Ω → riga –", "col. 3, 6, 9"),
+         ("DHT11 – S / + / –", "pin 2 / riga + / riga –", "maschio-femmina"),
+         ("HC-SR04 – Trig / Echo", "pin 3 / pin 4", "maschio-femmina"), ("HC-SR04 – Vcc / Gnd", "riga + / riga –", "maschio-femmina"),
+         ("Pulsante, un piedino / opposto", "pin 5 / riga –", "maschio-femmina"), ("5V / GND della UNO", "riga + / riga –", "")],
+        [("Il display è vuoto", "Gira il potenziometro del contrasto (ora è a destra, colonne 29-33)."),
+         ("I LED restano spenti", "Controlla i fili verso A0, A1, A2 (fila in basso della UNO, gruppo ANALOG IN): qui sono usati come uscite normali."),
+         ("Il pulsante non cambia pagina", "Usa due piedini opposti in diagonale. Puoi cambiare pagina anche dall'app."),
+         ("Pagina meteo: «sensore non risponde»", "Controlla i 3 fili del DHT11: S va al pin 2."),
+         ("Distanza sempre «--»", "Trig al pin 3 ed Echo al pin 4: in questo progetto sono diversi dai progetti 11, 18 e 22.")],
+        note=["Unisce il progetto 19 (termometro) e il 22 (metro). Se hai già montato uno dei due, tieni il display e aggiungi il resto. "
+              "Attenzione: alcuni pin cambiano (sensore a ultrasuoni su 3 e 4, pulsante su 5) e il potenziometro si sposta a destra."])
+
+
 GUIDE = {"blink": guida_blink, "servo": guida_servo, "rgb": guida_rgb, "luce": guida_luce, "buzzer": guida_buzzer,
          "semaforo": guida_semaforo, "pulsanti": guida_pulsanti, "potenziometro": guida_potenziometro, "meteo": guida_meteo,
          "joystick": guida_joystick, "allarme": guida_allarme, "telecomando": guida_telecomando, "registro": guida_registro,
          "settesegmenti": guida_settesegmenti, "lcd": guida_lcd, "ventilatore": guida_ventilatore, "passo": guida_passo,
          "parcheggio": guida_parcheggio, "termometro": guida_termometro, "simon": guida_simon, "dado": guida_dado,
-         "metro": guida_metro, "lampada": guida_lampada, "cronometro": guida_cronometro, "servoir": guida_servoir}
+         "metro": guida_metro, "lampada": guida_lampada, "cronometro": guida_cronometro, "servoir": guida_servoir, "stazione": guida_stazione}
 TITOLI = {"blink": "LED integrato", "servo": "Servo + sensore distanza", "rgb": "LED RGB", "luce": "Sensore di luce", "buzzer": "Buzzer",
           "semaforo": "Semaforo", "pulsanti": "Pulsanti e inclinazione", "potenziometro": "Manopola", "meteo": "Stazione meteo",
           "joystick": "Joystick", "allarme": "Allarme antifurto", "telecomando": "Telecomando a infrarossi", "registro": "8 LED con il 74HC595",
           "settesegmenti": "Display a 7 segmenti", "lcd": "Display LCD", "ventilatore": "Ventilatore", "passo": "Motore passo-passo",
           "parcheggio": "Sensore di parcheggio", "termometro": "Termometro con LCD", "simon": "Gioco Simon", "dado": "Dado elettronico",
-          "metro": "Metro portatile", "lampada": "Lampada notturna", "cronometro": "Cronometro a 4 cifre", "servoir": "Servo col telecomando"}
+          "metro": "Metro portatile", "lampada": "Lampada notturna", "cronometro": "Cronometro a 4 cifre", "servoir": "Servo col telecomando", "stazione": "Stazione LCD: meteo + distanza"}
 NUM = {"blink": 1, "semaforo": 2, "pulsanti": 3, "buzzer": 4, "rgb": 5, "potenziometro": 6, "luce": 7, "meteo": 8, "joystick": 9,
        "allarme": 10, "servo": 11, "telecomando": 12, "registro": 13, "settesegmenti": 14, "lcd": 15, "ventilatore": 16, "passo": 17,
-       "parcheggio": 18, "termometro": 19, "simon": 20, "dado": 21, "metro": 22, "lampada": 23, "cronometro": 24, "servoir": 25}
+       "parcheggio": 18, "termometro": 19, "simon": 20, "dado": 21, "metro": 22, "lampada": 23, "cronometro": 24, "servoir": 25, "stazione": 26}
 
 if __name__ == "__main__":
     import io

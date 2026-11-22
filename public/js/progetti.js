@@ -1135,6 +1135,65 @@ export const PROGETTI = [
       setTimeout(() => api.invia("?"), 50);
     },
   },
+  // ---------------------------------------------------------------- STAZIONE (19 + 22)
+  {
+    id: "stazione",
+    n: 26, livello: 5, autonomo: true,
+    icona: "📟",
+    nome: "Stazione LCD: meteo + distanza",
+    descr: "Termometro e metro insieme: un pulsante cambia la pagina del display, tre LED mostrano sempre la distanza.",
+    collegamenti: [
+      "Display LCD come nel progetto 15, ma con il potenziometro del contrasto nelle colonne 29-31-33",
+      "DHT11: S → pin 2, + → riga +, – → riga –",
+      "HC-SR04: Vcc → riga +, Gnd → riga –, Trig → pin 3, Echo → pin 4",
+      "Pulsante «pagina» con due cavetti maschio-femmina: un piedino → pin 5, quello opposto in diagonale → riga –",
+      "LED verde → A0, giallo → A1, rosso → A2 (corto → 220 Ω → riga –)",
+    ],
+    monta(el, api) {
+      const lcd = h("div", { class: "lcdbox" }, h("div", {}, "Stazione UNO Lab"), h("div", {}, "avvio...        "));
+      const pag = [h("button", { onclick: () => api.invia("P0") }, "🌡️ Meteo"), h("button", { onclick: () => api.invia("P1") }, "📏 Distanza")];
+      const t = h("div", { class: "grande" }, "–"), u = h("div", { class: "grande" }, "–");
+      const mm = h("p", { class: "etichetta centro" }, "");
+      const dist = h("div", { class: "distanza" }, "–");
+      const colori = ["#16a065", "#e0a800", "#d43c3c"];
+      const leds = colori.map(c => h("div", { class: "lampada piccola", "data-c": c }));
+      let dati = { t: null, d: null, pagina: 0 };
+      function aggiornaLcd() {
+        const r = dati.pagina === 0
+          ? (dati.t && +dati.t[0] > -50 ? [`${dati.t[0].padStart(3)}°C  Umid ${dati.t[1].padStart(2)}%`, `min ${dati.t[2].padStart(2)}  max ${dati.t[3].padStart(2)}`] : ["Meteo: sensore", "non risponde"])
+          : (dati.d === null ? ["Distanza: --", ""] : dati.d < 0 ? ["Distanza: --", ""]
+            : [`Dist ${dati.d.toFixed(1).padStart(5)} cm`, "█".repeat(Math.max(0, Math.min(16, Math.round(dati.d / 200 * 16))))]);
+        lcd.children[0].textContent = r[0].padEnd(16); lcd.children[1].textContent = r[1].padEnd(16);
+      }
+      el.append(lcd,
+        h("div", { class: "schede due" }, ...pag),
+        h("p", { class: "etichetta centro" }, "Il pulsante sulla breadboard fa la stessa cosa"),
+        h("div", { class: "griglia2" },
+          h("div", { class: "misura" }, h("p", { class: "etichetta" }, "Temperatura"), t),
+          h("div", { class: "misura" }, h("p", { class: "etichetta" }, "Umidità"), u)),
+        mm,
+        h("p", { class: "etichetta" }, "Distanza e LED"),
+        h("div", { class: "riga centro" }, ...leds), dist,
+        h("button", { onclick: () => api.invia("Z") }, "Azzera minima e massima"));
+      api.onRiga(l => {
+        let m;
+        if ((m = l.match(/^T (-?\d+) (-?\d+) (-?\d+) (-?\d+)/))) {
+          dati.t = [m[1], m[2], m[3], m[4]];
+          const ok = +m[1] > -50;
+          t.textContent = ok ? m[1] + " °C" : "–"; u.textContent = ok ? m[2] + " %" : "–";
+          mm.textContent = ok ? `minima ${m[3]} °C · massima ${m[4]} °C` : "Il DHT11 non risponde: controlla i 3 fili.";
+        } else if ((m = l.match(/^D (-?[\d.]+) (\d)/))) {
+          dati.d = parseFloat(m[1]);
+          dist.textContent = dati.d < 0 ? "niente davanti (oltre 3 m)" : dati.d.toFixed(1) + " cm";
+          leds.forEach((x, i) => { const on = i === +m[2]; x.style.background = on ? x.dataset.c : ""; x.style.boxShadow = on ? `0 0 14px ${x.dataset.c}` : "none"; });
+        } else if ((m = l.match(/^P (\d)/))) {
+          dati.pagina = +m[1];
+          pag.forEach((b, i) => b.classList.toggle("attiva", i === dati.pagina));
+        } else return;
+        aggiornaLcd();
+      });
+    },
+  },
 ];
 
 PROGETTI.sort((a, b) => a.n - b.n);
