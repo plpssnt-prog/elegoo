@@ -36,6 +36,7 @@ export const PROGETTI = [
   // ---------------------------------------------------------------- BLINK
   {
     id: "blink",
+    n: 1, livello: 1,
     icona: "💡",
     nome: "LED integrato",
     descr: "Accende e fa lampeggiare il LED «L» sulla scheda. Nessun collegamento: ottimo primo test.",
@@ -57,6 +58,7 @@ export const PROGETTI = [
   // ---------------------------------------------------------------- SERVO
   {
     id: "servo",
+    n: 11, livello: 3,
     icona: "🦾",
     nome: "Servo + sensore distanza",
     descr: "Servo SG90 e sensore a ultrasuoni HC-SR04: comando manuale, radar e modalità «segui la mano».",
@@ -193,6 +195,7 @@ export const PROGETTI = [
   // ---------------------------------------------------------------- RGB
   {
     id: "rgb",
+    n: 5, livello: 1,
     icona: "🌈",
     nome: "LED RGB",
     descr: "Sceglie il colore del LED RGB del kit, con selettore o tre slider.",
@@ -233,6 +236,7 @@ export const PROGETTI = [
   // ---------------------------------------------------------------- LUCE
   {
     id: "luce",
+    n: 7, livello: 2,
     icona: "🔆",
     nome: "Sensore di luce",
     descr: "Legge la fotoresistenza e mostra la luminosità con un grafico in tempo reale.",
@@ -294,6 +298,7 @@ export const PROGETTI = [
   // ---------------------------------------------------------------- BUZZER
   {
     id: "buzzer",
+    n: 4, livello: 1,
     icona: "🎹",
     nome: "Buzzer",
     descr: "Una piccola tastiera: ogni tasto suona una nota sul buzzer passivo.",
@@ -322,4 +327,538 @@ export const PROGETTI = [
           h("button", { onclick: () => api.invia("X") }, "Stop")));
     },
   },
+  // ================================================================ NUOVI PROGETTI
+
+  // ---------------------------------------------------------------- SEMAFORO
+  {
+    id: "semaforo",
+    n: 2, livello: 1,
+    icona: "🚦",
+    nome: "Semaforo",
+    descr: "Tre LED rosso, giallo e verde: semaforo automatico, lampeggiante o comandato a mano.",
+    collegamenti: [
+      "Ogni LED: piedino lungo verso il pin, piedino corto → resistenza 220 Ω → riga –",
+      "Rosso → pin 12, giallo → pin 11, verde → pin 10",
+      "GND della UNO → riga – della breadboard",
+    ],
+    monta(el, api) {
+      const luci = ["#d43c3c", "#e0a800", "#16a065"].map(c => h("div", { class: "lampada", "data-c": c }));
+      const accendi = (i, on) => { luci[i].style.background = on ? luci[i].dataset.c : ""; luci[i].style.color = luci[i].dataset.c; luci[i].classList.toggle("on", on); };
+      let stato = [0, 0, 0];
+      luci.forEach((l, i) => l.addEventListener("click", () => {
+        stato[i] = stato[i] ? 0 : 1; api.invia("L" + stato.join(""));
+      }));
+      const modi = [["Manuale", "M0"], ["Automatico", "M1"], ["Lampeggiante", "M2"]];
+      const bott = modi.map(([n, c]) => h("button", { onclick: () => api.invia(c) }, n));
+      el.append(h("div", { class: "schede" }, ...bott),
+        h("div", { class: "semaforo" }, ...luci),
+        h("p", { class: "etichetta centro" }, "In modalità manuale tocca una luce per accenderla o spegnerla."));
+      const segnaModo = m => bott.forEach((b, i) => b.classList.toggle("attiva", i === m));
+      api.onRiga(l => {
+        let m;
+        if ((m = l.match(/^S ([01])([01])([01])/))) { stato = [+m[1], +m[2], +m[3]]; stato.forEach((v, i) => accendi(i, v)); }
+        else if ((m = l.match(/^M (\d)/))) segnaModo(+m[1]);
+      });
+      setTimeout(() => api.invia("?"), 50);
+    },
+  },
+
+  // ---------------------------------------------------------------- PULSANTI
+  {
+    id: "pulsanti",
+    n: 3, livello: 1,
+    icona: "🔘",
+    nome: "Pulsanti e inclinazione",
+    descr: "Due pulsanti e il sensore di inclinazione: l'app mostra in tempo reale cosa premi e conta i clic.",
+    collegamenti: [
+      "Pulsante A a cavallo della scanalatura: un piedino → pin 2, quello opposto in diagonale → riga –",
+      "Pulsante B: un piedino → pin 3, quello opposto in diagonale → riga –",
+      "Sensore di inclinazione: un piedino → pin 4, l'altro → riga –",
+      "GND della UNO → riga –. Non servono resistenze.",
+    ],
+    monta(el, api) {
+      const spia = (nome) => {
+        const s = h("div", { class: "spia" }), cnt = h("span", { class: "conta" }, "0");
+        return { el: h("div", { class: "card-spia" }, s, h("b", {}, nome), cnt), s, cnt, n: 0 };
+      };
+      const A = spia("Pulsante A"), B = spia("Pulsante B"), T = spia("Inclinazione");
+      T.cnt.textContent = "";
+      const prec = [0, 0, 0];
+      el.append(h("div", { class: "griglia3" }, A.el, B.el, T.el),
+        h("p", { class: "etichetta centro" }, "Il numero conta le pressioni. Inclina la breadboard per far cambiare il sensore."),
+        h("button", { onclick: () => { A.n = B.n = 0; A.cnt.textContent = B.cnt.textContent = "0"; } }, "Azzera conteggi"));
+      api.onRiga(l => {
+        const m = l.match(/^B ([01])([01])([01])/);
+        if (!m) return;
+        [A, B, T].forEach((x, i) => {
+          const v = +m[i + 1];
+          x.s.classList.toggle("on", !!v);
+          if (i < 2 && v && !prec[i]) { x.n++; x.cnt.textContent = x.n; }
+          prec[i] = v;
+        });
+        T.cnt.textContent = +m[3] ? "chiuso" : "aperto";
+      });
+      setTimeout(() => api.invia("?"), 50);
+    },
+  },
+
+  // ---------------------------------------------------------------- POTENZIOMETRO
+  {
+    id: "potenziometro",
+    n: 6, livello: 2,
+    icona: "🎛️",
+    nome: "Manopola (potenziometro)",
+    descr: "Giri la manopola e la vedi sul telefono; regola la luminosità di un LED, da manopola o da app.",
+    collegamenti: [
+      "Potenziometro: piedino esterno → riga +, centrale → A0, altro esterno → riga –",
+      "LED: piedino lungo → pin 9, corto → resistenza 220 Ω → riga –",
+      "5V della UNO → riga +, GND → riga –",
+    ],
+    monta(el, api) {
+      const valore = h("div", { class: "grande" }, "–");
+      const barra = h("div", { class: "barra-piena" });
+      const led = h("div", { class: "lampada piccola" });
+      const s = slider(0, 255, 0, v => { inviaP(v); mostraLed(v); });
+      const inviaP = limitato(v => api.invia("P" + v));
+      const mostraLed = v => { led.style.background = `rgba(212,60,60,${0.08 + v / 255 * 0.92})`; };
+      const bott = [h("button", { onclick: () => api.invia("M0") }, "Comanda la manopola"),
+                    h("button", { onclick: () => api.invia("M1") }, "Comanda l'app")];
+      el.append(valore, h("div", { class: "barra" }, barra),
+        h("div", { class: "schede due" }, ...bott),
+        h("div", { class: "riga" }, led, h("div", { style: "flex:1" }, h("p", { class: "etichetta" }, "Luminosità del LED"), s)));
+      api.onRiga(l => {
+        let m;
+        if ((m = l.match(/^V (\d+) (\d+)/))) {
+          const v = +m[1];
+          valore.textContent = Math.round(v / 1023 * 100) + "%";
+          barra.style.width = v / 1023 * 100 + "%";
+          if (bott[0].classList.contains("attiva")) { s.value = +m[2]; mostraLed(+m[2]); }
+        } else if ((m = l.match(/^M (\d)/))) {
+          bott.forEach((b, i) => b.classList.toggle("attiva", i === +m[1]));
+          s.disabled = m[1] === "0";
+        }
+      });
+      setTimeout(() => { api.invia("M0"); api.invia("S1"); }, 50);
+      return () => api.invia("M0");
+    },
+  },
+
+  // ---------------------------------------------------------------- METEO
+  {
+    id: "meteo",
+    n: 8, livello: 2,
+    icona: "🌡️",
+    nome: "Stazione meteo",
+    descr: "Temperatura e umidità con il modulo DHT11, e una seconda temperatura dal termistore, con grafico.",
+    collegamenti: [
+      "DHT11 (cavetti maschio-femmina): S → pin 2, piedino centrale → 5V, – → GND",
+      "Termistore: riga + → termistore → A0 → resistenza 10 kΩ → riga –",
+      "5V della UNO → riga +, GND → riga –",
+    ],
+    monta(el, api) {
+      const box = (tit, unita) => {
+        const v = h("div", { class: "grande" }, "–");
+        return { v, el: h("div", { class: "misura" }, h("p", { class: "etichetta" }, tit), v), unita };
+      };
+      const tD = box("Temperatura (DHT11)", "°C"), uD = box("Umidità", "%"), tT = box("Temperatura (termistore)", "°C");
+      const cv = h("canvas", { width: 600, height: 220, class: "grafico" });
+      const nota = h("p", { class: "etichetta centro" }, "Aggiornamento ogni 2 secondi");
+      el.append(h("div", { class: "griglia2" }, tD.el, uD.el), tT.el, cv,
+        h("p", { class: "etichetta legenda" }, h("span", { style: "color:#d43c3c" }, "● DHT11"), "  ", h("span", { style: "color:#1f6fd1" }, "● termistore")),
+        nota);
+      const dati = [];
+      const ctx = cv.getContext("2d");
+      function disegna() {
+        ctx.clearRect(0, 0, 600, 220);
+        const vals = dati.flatMap(d => [d.a, d.b]).filter(v => v > -50);
+        if (!vals.length) return;
+        let lo = Math.floor(Math.min(...vals) - 1), hi = Math.ceil(Math.max(...vals) + 1);
+        const y = v => 200 - (v - lo) / (hi - lo) * 180;
+        ctx.fillStyle = "#8a90a0"; ctx.font = "16px system-ui";
+        ctx.fillText(hi + "°", 4, 20); ctx.fillText(lo + "°", 4, 210);
+        for (const [k, col] of [["a", "#d43c3c"], ["b", "#1f6fd1"]]) {
+          ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.beginPath();
+          let primo = true;
+          dati.forEach((d, i) => {
+            if (d[k] <= -50) return;
+            const x = 40 + i / 89 * 550;
+            primo ? ctx.moveTo(x, y(d[k])) : ctx.lineTo(x, y(d[k])); primo = false;
+          });
+          ctx.stroke();
+        }
+      }
+      api.onRiga(l => {
+        const m = l.match(/^T (-?\d+) (-?\d+) (-?[\d.]+)/);
+        if (!m) return;
+        const [t, u, tt] = [+m[1], +m[2], +m[3]];
+        tD.v.textContent = t > -50 ? t + " °C" : "errore";
+        uD.v.textContent = u > -50 ? u + " %" : "errore";
+        tT.v.textContent = tt > -50 ? tt.toFixed(1) + " °C" : "errore";
+        nota.textContent = t > -50 ? "Aggiornamento ogni 2 secondi" : "Il DHT11 non risponde: controlla i 3 fili del modulo.";
+        dati.push({ a: t, b: tt }); if (dati.length > 90) dati.shift();
+        disegna();
+      });
+      setTimeout(() => api.invia("?"), 50);
+    },
+  },
+
+  // ---------------------------------------------------------------- JOYSTICK
+  {
+    id: "joystick",
+    n: 9, livello: 2,
+    icona: "🕹️",
+    nome: "Joystick",
+    descr: "Muovi il joystick e il pallino sul telefono lo segue; premilo per «sparare».",
+    collegamenti: [
+      "Cavetti maschio-femmina, niente breadboard:",
+      "GND → GND, +5V → 5V, VRx → A0, VRy → A1, SW → pin 2",
+    ],
+    monta(el, api) {
+      const punto = h("div", { class: "punto" });
+      const pad = h("div", { class: "pad" }, h("div", { class: "croce-x" }), h("div", { class: "croce-y" }), punto);
+      const info = h("p", { class: "etichetta centro" }, "–");
+      const tasto = h("div", { class: "spia" });
+      let colpi = 0;
+      const nColpi = h("b", {}, "0");
+      el.append(pad, info, h("div", { class: "riga centro" }, tasto, h("span", {}, "Pulsante premuto · colpi: "), nColpi));
+      let prima = 0;
+      api.onRiga(l => {
+        const m = l.match(/^J (\d+) (\d+) ([01])/);
+        if (!m) return;
+        const x = +m[1] / 1023, y = +m[2] / 1023, b = +m[3];
+        punto.style.left = x * 100 + "%"; punto.style.top = y * 100 + "%";
+        punto.classList.toggle("premuto", !!b);
+        tasto.classList.toggle("on", !!b);
+        if (b && !prima) nColpi.textContent = ++colpi;
+        prima = b;
+        info.textContent = `X ${m[1]} · Y ${m[2]}`;
+      });
+      setTimeout(() => api.invia("?"), 50);
+    },
+  },
+
+  // ---------------------------------------------------------------- ALLARME
+  {
+    id: "allarme",
+    n: 10, livello: 2,
+    icona: "🚨",
+    nome: "Allarme antifurto",
+    descr: "Attivi l'allarme dal telefono: se qualcuno muove la breadboard suonano sirena e LED.",
+    collegamenti: [
+      "Sensore di inclinazione: un piedino → pin 2, l'altro → riga –",
+      "Buzzer ATTIVO (con adesivo): piedino lungo (+) → pin 8, corto → riga –",
+      "LED rosso: piedino lungo → pin 12, corto → resistenza 220 Ω → riga –",
+      "GND della UNO → riga –",
+    ],
+    monta(el, api) {
+      const stato = h("div", { class: "stato-allarme" }, "–");
+      const reg = h("ul", { class: "registro-eventi" });
+      const att = h("button", { class: "primario", onclick: () => api.invia("A1") }, "Attiva");
+      const dis = h("button", { onclick: () => api.invia("A0") }, "Disattiva");
+      el.append(stato, h("div", { class: "riga" }, att, dis),
+        h("button", { onclick: () => api.invia("T") }, "Prova la sirena"),
+        h("p", { class: "etichetta" }, "Eventi"), reg);
+      let prec = null;
+      const evento = t => {
+        reg.prepend(h("li", {}, new Date().toLocaleTimeString("it-IT") + " · " + t));
+        while (reg.children.length > 8) reg.lastChild.remove();
+      };
+      api.onRiga(l => {
+        const m = l.match(/^S ([01]) ([01]) (-?\d)/);
+        if (!m) return;
+        const [a, al] = [+m[1], +m[2]];
+        stato.className = "stato-allarme " + (al ? "allarme" : a ? "attivo" : "");
+        stato.textContent = al ? "🚨 ALLARME!" : a ? "🔒 Attivo" : "🔓 Disattivato";
+        const k = `${a}${al}`;
+        if (prec !== null && k !== prec) evento(al ? "allarme scattato" : a ? "attivato" : "disattivato");
+        prec = k;
+        if (al && navigator.vibrate) navigator.vibrate([300, 150, 300]);
+      });
+      setTimeout(() => api.invia("?"), 50);
+    },
+  },
+
+  // ---------------------------------------------------------------- TELECOMANDO
+  {
+    id: "telecomando",
+    n: 12, livello: 3,
+    icona: "📺",
+    nome: "Telecomando a infrarossi",
+    descr: "Premi i tasti del telecomando del kit: l'app ti mostra quale hai premuto.",
+    collegamenti: [
+      "Cavetti maschio-femmina, niente breadboard:",
+      "Ricevitore IR: G (o –) → GND, R (centrale) → 5V, Y (o S) → pin 11",
+    ],
+    monta(el, api) {
+      const TASTI = [
+        ["FFA25D", "⏻"], ["FF629D", "VOL+"], ["FFE21D", "FUNC"],
+        ["FF22DD", "⏮"], ["FF02FD", "⏯"], ["FFC23D", "⏭"],
+        ["FFE01F", "▼"], ["FFA857", "VOL–"], ["FF906F", "▲"],
+        ["FF6897", "0"], ["FF9867", "EQ"], ["FFB04F", "ST/REPT"],
+        ["FF30CF", "1"], ["FF18E7", "2"], ["FF7A85", "3"],
+        ["FF10EF", "4"], ["FF38C7", "5"], ["FF5AA5", "6"],
+        ["FF42BD", "7"], ["FF4AB5", "8"], ["FF52AD", "9"],
+      ];
+      const btn = new Map(TASTI.map(([c, n]) => [c, h("div", { class: "tasto-ir" + (c === "FFA25D" ? " rosso" : "") }, n)]));
+      const ultimo = h("div", { class: "grande" }, "–");
+      const cronologia = h("p", { class: "etichetta centro" }, "");
+      const storia = [];
+      el.append(ultimo, h("div", { class: "telecomando" }, ...btn.values()), cronologia);
+      let prec = null;
+      const evidenzia = b => { b.classList.add("premuto"); setTimeout(() => b.classList.remove("premuto"), 250); };
+      api.onRiga(l => {
+        if (l === "R" && prec) { evidenzia(prec); return; }
+        const m = l.match(/^K ([0-9A-F]+)/);
+        if (!m) return;
+        const b = btn.get(m[1]);
+        const nome = b ? b.textContent : "sconosciuto (" + m[1] + ")";
+        ultimo.textContent = nome;
+        if (b) { evidenzia(b); prec = b; }
+        storia.unshift(nome); storia.length = Math.min(storia.length, 10);
+        cronologia.textContent = "Ultimi: " + storia.join(" · ");
+      });
+    },
+  },
+
+  // ---------------------------------------------------------------- REGISTRO 74HC595
+  {
+    id: "registro",
+    n: 13, livello: 3,
+    icona: "🎚️",
+    nome: "8 LED con il 74HC595",
+    descr: "Il chip 74HC595 comanda 8 LED usando solo 3 pin: accendili uno per uno o scegli un gioco di luci.",
+    collegamenti: [
+      "Chip 74HC595 a cavallo della scanalatura, tacca a sinistra",
+      "16 VCC e 10 MR → riga +, 8 GND e 13 OE → riga –",
+      "14 DS → pin 12, 12 latch → pin 11, 11 clock → pin 9",
+      "Uscite Q0 (piedino 15) e Q1…Q7 (piedini 1…7) → piedino lungo dei LED; piedino corto → resistenza 220 Ω → riga –",
+      "Unisci le righe + e – in alto con quelle in basso; 5V della UNO → riga +, GND → riga –",
+    ],
+    monta(el, api) {
+      let valore = 0;
+      const leds = Array.from({ length: 8 }, (_, i) => h("button", { class: "led8", onclick: () => api.invia("W" + (valore ^ (1 << i))) }, "Q" + i));
+      const giochi = [["Fermo", 0], ["Supercar", 1], ["Contatore", 2], ["Casuale", 3], ["Riempi", 4]];
+      const bott = giochi.map(([n, g]) => h("button", { onclick: () => api.invia("P" + g) }, n));
+      const vel = slider(30, 600, 120, v => inviaV(630 - v), 10);
+      const inviaV = limitato(v => api.invia("V" + v), 80);
+      vel.value = 510;
+      el.append(h("div", { class: "ledbar" }, ...leds),
+        h("p", { class: "etichetta centro" }, "Tocca un LED per accenderlo o spegnerlo"),
+        h("div", { class: "griglia5" }, ...bott),
+        h("p", { class: "etichetta" }, "Velocità"), vel,
+        h("div", { class: "riga" }, h("button", { onclick: () => api.invia("W255") }, "Tutti accesi"), h("button", { onclick: () => api.invia("W0") }, "Tutti spenti")));
+      api.onRiga(l => {
+        let m;
+        if ((m = l.match(/^S (\d+)/))) { valore = +m[1]; leds.forEach((b, i) => b.classList.toggle("on", !!(valore & (1 << i)))); }
+        else if ((m = l.match(/^P (\d)/))) bott.forEach((b, i) => b.classList.toggle("attiva", i === +m[1]));
+      });
+      setTimeout(() => api.invia("?"), 50);
+    },
+  },
+
+  // ---------------------------------------------------------------- 7 SEGMENTI
+  {
+    id: "settesegmenti",
+    n: 14, livello: 3,
+    icona: "8️⃣",
+    nome: "Display a 7 segmenti",
+    descr: "Una cifra luminosa comandata dal 74HC595: numeri, conto alla rovescia e lancio del dado.",
+    collegamenti: [
+      "Chip 74HC595 come nel progetto «8 LED»: 16 e 10 → +, 8 e 13 → –, 14 → pin 12, 12 → pin 11, 11 → pin 9",
+      "Uscite del chip → resistenza 220 Ω → segmento: Q0→a, Q1→b, Q2→c, Q3→d, Q4→e, Q5→f, Q6→g, Q7→punto",
+      "Display (punto in basso a destra): piedini centrali in alto e in basso (comune) → riga –",
+    ],
+    monta(el, api) {
+      const SEG = { "0": 0x3f, "1": 0x06, "2": 0x5b, "3": 0x4f, "4": 0x66, "5": 0x6d, "6": 0x7d, "7": 0x07, "8": 0x7f, "9": 0x6f,
+        A: 0x77, B: 0x7c, C: 0x39, D: 0x5e, E: 0x79, F: 0x71, "-": 0x40, " ": 0 };
+      const ns = "http://www.w3.org/2000/svg";
+      const svg = document.createElementNS(ns, "svg");
+      svg.setAttribute("viewBox", "0 0 120 200"); svg.setAttribute("class", "display7");
+      const forme = [[20, 10, 80, 14], [96, 20, 14, 74], [96, 106, 14, 74], [20, 176, 80, 14], [10, 106, 14, 74], [10, 20, 14, 74], [20, 93, 80, 14]];
+      const segs = forme.map(([x, y, w, hh]) => {
+        const r = document.createElementNS(ns, "rect");
+        Object.entries({ x, y, width: w, height: hh, rx: 6 }).forEach(([k, v]) => r.setAttribute(k, v));
+        svg.append(r); return r;
+      });
+      const dp = document.createElementNS(ns, "circle");
+      [["cx", 112], ["cy", 190], ["r", 7]].forEach(([k, v]) => dp.setAttribute(k, v)); svg.append(dp);
+      let punto = false;
+      const tastiera = "1234567890ABCDEF-".split("").map(c => h("button", { onclick: () => api.invia("D" + c) }, c));
+      el.append(svg,
+        h("div", { class: "griglia6" }, ...tastiera),
+        h("div", { class: "riga" },
+          h("button", { onclick: () => { punto = !punto; api.invia("." + (punto ? 1 : 0)); } }, "Punto"),
+          h("button", { onclick: () => api.invia("E") }, "Spegni")),
+        h("div", { class: "riga" },
+          h("button", { class: "primario", onclick: () => api.invia("R") }, "🎲 Lancia il dado"),
+          h("button", { class: "primario", onclick: () => api.invia("C9") }, "⏱ Conto alla rovescia")));
+      api.onRiga(l => {
+        const m = l.match(/^S (.)/);
+        if (!m) return;
+        const v = SEG[m[1]] ?? 0;
+        segs.forEach((s, i) => s.classList.toggle("on", !!(v & (1 << i))));
+        dp.classList.toggle("on", punto);
+      });
+      setTimeout(() => api.invia("D-"), 50);
+    },
+  },
+
+  // ---------------------------------------------------------------- LCD
+  {
+    id: "lcd",
+    n: 15, livello: 3,
+    icona: "📟",
+    nome: "Display LCD",
+    descr: "Scrivi dal telefono due righe di testo sul display LCD 16×2, oppure mostra l'ora.",
+    collegamenti: [
+      "Display nella breadboard, 16 piedini numerati da sinistra; potenziometro per il contrasto",
+      "1 → –, 2 → +, 3 → centrale potenziometro, 4 → pin 7, 5 → –, 6 → pin 8",
+      "11 → pin 9, 12 → pin 10, 13 → pin 11, 14 → pin 12",
+      "15 → resistenza 220 Ω → +, 16 → –; potenziometro: esterni a + e –",
+      "Se non vedi niente gira il potenziometro: regola il contrasto.",
+    ],
+    monta(el, api) {
+      const norm = t => t.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\x20-\x7e]/g, "?").slice(0, 16);
+      const r1 = h("input", { class: "testo", maxlength: 16, value: "Ciao dal Pixel!", placeholder: "Riga 1" });
+      const r2 = h("input", { class: "testo", maxlength: 16, value: "UNO Lab", placeholder: "Riga 2" });
+      const anteprima = h("div", { class: "lcdbox" }, h("div", {}, ""), h("div", {}, ""));
+      let orologio = null;
+      const mostra = (a, b) => {
+        anteprima.children[0].textContent = norm(a).padEnd(16, " ");
+        anteprima.children[1].textContent = norm(b).padEnd(16, " ");
+      };
+      const invia = () => {
+        stopOra();
+        api.invia("1" + norm(r1.value)); api.invia("2" + norm(r2.value));
+        mostra(r1.value, r2.value);
+      };
+      const stopOra = () => { if (orologio) { clearInterval(orologio); orologio = null; } };
+      const ora = () => {
+        stopOra();
+        const tick = () => {
+          const d = new Date();
+          const a = d.toLocaleDateString("it-IT", { weekday: "short", day: "2-digit", month: "short" });
+          const b = d.toLocaleTimeString("it-IT");
+          api.invia("1" + norm(a)); api.invia("2" + norm(b)); mostra(a, b);
+        };
+        tick(); orologio = setInterval(tick, 1000);
+      };
+      el.append(anteprima, r1, r2,
+        h("button", { class: "primario", onclick: invia }, "Scrivi sul display"),
+        h("div", { class: "riga" },
+          h("button", { onclick: ora }, "🕒 Mostra l'ora"),
+          h("button", { onclick: () => { stopOra(); api.invia("X"); mostra("", ""); } }, "Pulisci")),
+        h("p", { class: "etichetta" }, "Massimo 16 caratteri per riga. Le lettere accentate vengono scritte senza accento."));
+      mostra("UNO Lab", "pronto!");
+      return stopOra;
+    },
+  },
+
+  // ---------------------------------------------------------------- VENTILATORE
+  {
+    id: "ventilatore",
+    n: 16, livello: 4,
+    icona: "🌀",
+    nome: "Ventilatore",
+    descr: "Il motorino con l'elica, comandato dal chip L293D: velocità e senso di rotazione dal telefono.",
+    collegamenti: [
+      "Modulo di alimentazione sulla breadboard (ponticelli su 5V) con la batteria 9V",
+      "L293D a cavallo della scanalatura, tacca a sinistra",
+      "1 → pin 5, 2 → pin 3, 7 → pin 4; 3 e 6 → i due fili del motore",
+      "4, 5, 12, 13 → riga –; 16 e 8 → riga +; GND della UNO → riga –",
+      "NON collegare il 5V della UNO alla riga +.",
+    ],
+    monta(el, api) {
+      const elica = h("div", { class: "elica" }, "✣");
+      const valore = h("div", { class: "grande" }, "0%");
+      const invia = limitato(v => api.invia("V" + v), 80);
+      const s = slider(-100, 100, 0, v => { valore.textContent = v + "%"; invia(v); }, 5);
+      let vel = 0, ang = 0, raf;
+      const gira = () => { ang += vel * 0.25; elica.style.transform = `rotate(${ang}deg)`; raf = requestAnimationFrame(gira); };
+      gira();
+      el.append(elica, valore, s,
+        h("div", { class: "riga" },
+          h("button", { onclick: () => api.invia("V-60") }, "⟲ Indietro"),
+          h("button", { class: "primario", onclick: () => api.invia("S") }, "■ Stop"),
+          h("button", { onclick: () => api.invia("V60") }, "Avanti ⟳")),
+        h("p", { class: "etichetta" }, "Tieni le dita lontane dall'elica. Sotto il 20% circa il motore può non girare."));
+      api.onRiga(l => {
+        const m = l.match(/^V (-?\d+)/);
+        if (!m) return;
+        vel = +m[1]; s.value = vel; valore.textContent = vel + "%";
+      });
+      setTimeout(() => api.invia("?"), 50);
+      return () => { cancelAnimationFrame(raf); api.invia("S"); };
+    },
+  },
+
+  // ---------------------------------------------------------------- PASSO-PASSO
+  {
+    id: "passo",
+    n: 17, livello: 4,
+    icona: "⚙️",
+    nome: "Motore passo-passo",
+    descr: "Il motore 28BYJ-48 con il driver ULN2003: lo porti esattamente all'angolo che vuoi.",
+    collegamenti: [
+      "Modulo di alimentazione sulla breadboard (ponticelli su 5V) con la batteria 9V",
+      "Driver ULN2003 (cavetti maschio-femmina): IN1 → pin 8, IN2 → pin 9, IN3 → pin 10, IN4 → pin 11",
+      "+ del driver → riga +, – del driver → riga –; GND della UNO → riga –",
+      "Connettore bianco del motore nella presa del driver",
+    ],
+    monta(el, api) {
+      const cv = h("canvas", { width: 300, height: 300, class: "quadrante-tondo" });
+      const valore = h("div", { class: "grande" }, "0°");
+      const ctx = cv.getContext("2d");
+      let pos = 0, target = null;
+      function disegna() {
+        ctx.clearRect(0, 0, 300, 300);
+        ctx.strokeStyle = "#dfe3ea"; ctx.lineWidth = 14; ctx.beginPath(); ctx.arc(150, 150, 120, 0, 2 * Math.PI); ctx.stroke();
+        ctx.fillStyle = "#8a90a0"; ctx.font = "15px system-ui"; ctx.textAlign = "center";
+        [[0, "0°"], [90, "90°"], [180, "180°"], [270, "270°"]].forEach(([a, t]) => {
+          const r = (a - 90) * Math.PI / 180; ctx.fillText(t, 150 + Math.cos(r) * 95, 155 + Math.sin(r) * 95);
+        });
+        const lancia = (a, col, w, len) => {
+          const r = (a - 90) * Math.PI / 180;
+          ctx.strokeStyle = col; ctx.lineWidth = w; ctx.lineCap = "round";
+          ctx.beginPath(); ctx.moveTo(150, 150); ctx.lineTo(150 + Math.cos(r) * len, 150 + Math.sin(r) * len); ctx.stroke();
+        };
+        if (target !== null) lancia(target, "rgba(31,111,209,.3)", 6, 120);
+        lancia(pos, "#1f6fd1", 8, 110);
+        ctx.fillStyle = "#1b1f27"; ctx.beginPath(); ctx.arc(150, 150, 10, 0, 2 * Math.PI); ctx.fill();
+      }
+      cv.addEventListener("click", e => {
+        const b = cv.getBoundingClientRect();
+        const x = (e.clientX - b.left) / b.width * 300 - 150, y = (e.clientY - b.top) / b.height * 300 - 150;
+        let a = Math.round(Math.atan2(y, x) * 180 / Math.PI + 90);
+        if (a < 0) a += 360;
+        target = a; disegna(); api.invia("G" + a);
+      });
+      const rpm = slider(1, 15, 10, v => inviaV(v));
+      const inviaV = limitato(v => api.invia("V" + v), 120);
+      el.append(cv, valore,
+        h("p", { class: "etichetta centro" }, "Tocca il cerchio per scegliere l'angolo"),
+        h("div", { class: "griglia4" },
+          ...[["–90°", "R-90"], ["+90°", "R90"], ["Giro intero", "R360"], ["Torna a 0", "G0"]].map(([t, c]) =>
+            h("button", { onclick: () => { target = null; api.invia(c); } }, t))),
+        h("p", { class: "etichetta" }, "Velocità (giri al minuto)"), rpm,
+        h("div", { class: "riga" },
+          h("button", { onclick: () => api.invia("Z") }, "Imposta lo zero qui"),
+          h("button", { onclick: () => api.invia("X") }, "■ Ferma")));
+      api.onRiga(l => {
+        const m = l.match(/^(P|FERMO) (-?[\d.]+)/);
+        if (!m) return;
+        const g = parseFloat(m[2]);
+        pos = ((g % 360) + 360) % 360;
+        valore.textContent = Math.round(g) + "°";
+        if (m[1] === "FERMO") target = null;
+        disegna();
+      });
+      disegna();
+      setTimeout(() => api.invia("?"), 50);
+      return () => api.invia("X");
+    },
+  },
 ];
+
+PROGETTI.sort((a, b) => a.n - b.n);
+export const LIVELLI = ["", "Livello 1 · Primi passi", "Livello 2 · Sensori", "Livello 3 · Moduli e chip", "Livello 4 · Motori"];

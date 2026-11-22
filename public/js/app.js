@@ -1,6 +1,6 @@
 import { Link, browserSupportato, sleep } from "./link.js";
 import { leggiHex, programma } from "./flasher.js";
-import { PROGETTI, h } from "./progetti.js";
+import { PROGETTI, LIVELLI, h } from "./progetti.js";
 
 const link = new Link();
 const stato = {
@@ -138,7 +138,7 @@ function schedaProgetto(p) {
     h("div", { class: "testa" },
       h("span", { class: "icona" }, p.icona),
       h("div", {},
-        h("h2", {}, p.nome, sopra ? h("span", { class: "badge" }, "caricato") : null),
+        h("h2", {}, h("span", { class: "num" }, p.n), p.nome, sopra ? h("span", { class: "badge" }, "caricato") : null),
         h("p", {}, p.descr))),
     h("details", {},
       h("summary", {}, "Collegamenti"),
@@ -168,7 +168,11 @@ function vistaHome() {
     figli.push(h("button", { class: "primario largo", onclick: () => (location.hash = "#/p/" + p.id) },
       `Apri i comandi di «${p.nome}»`));
   }
-  figli.push(...PROGETTI.map(schedaProgetto));
+  let liv = 0;
+  for (const p of PROGETTI) {
+    if (p.livello !== liv) { liv = p.livello; figli.push(h("h3", { class: "livello" }, LIVELLI[liv])); }
+    figli.push(schedaProgetto(p));
+  }
   return figli;
 }
 

@@ -67,6 +67,49 @@
   .tasto { background:#fff; color:#111; border:1px solid #cfd4dc; height:130px; padding:0 0 10px; display:flex; align-items:flex-end;
            justify-content:center; font-weight:600; font-size:.8rem; border-radius:0 0 10px 10px; touch-action:manipulation; }
   .tasto:active { background:var(--acc); color:#fff; }
+  /* progetti */
+  h3.livello { margin:10px 0 -4px; font-size:.8rem; letter-spacing:.06em; text-transform:uppercase; color:var(--mut); }
+  .num { display:inline-grid; place-items:center; min-width:24px; height:24px; border-radius:7px; background:var(--tasto); color:var(--mut); font-size:.75rem; }
+  .centro { text-align:center; justify-content:center; }
+  .schede.due { grid-template-columns:1fr 1fr; }
+  .griglia2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .griglia4 { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; } .griglia4 button { padding:12px 0; font-size:.85rem; }
+  .griglia6 { display:grid; grid-template-columns:repeat(6,1fr); gap:6px; } .griglia6 button { padding:12px 0; }
+  .semaforo { width:110px; margin:6px auto; padding:14px; background:#2b2f36; border-radius:22px; display:flex; flex-direction:column; gap:12px; }
+  .lampada { width:82px; height:82px; border-radius:50%; background:#4a4f58; cursor:pointer; transition:background .15s, box-shadow .15s; }
+  .lampada.on { box-shadow:0 0 22px currentColor; }
+  .lampada.piccola { width:54px; height:54px; cursor:default; border:1px solid var(--bordo); }
+  .card-spia { display:flex; flex-direction:column; align-items:center; gap:6px; padding:12px 4px; border:1px solid var(--bordo); border-radius:14px; font-size:.85rem; text-align:center; }
+  .spia { width:44px; height:44px; border-radius:50%; background:var(--tasto); border:2px solid var(--bordo); transition:.1s; }
+  .riga .spia { width:22px; height:22px; }
+  .spia.on { background:var(--ok); border-color:var(--ok); box-shadow:0 0 12px rgba(22,160,101,.5); }
+  .conta { font-size:1.3rem; font-weight:700; color:var(--acc); min-height:1.5em; }
+  .misura { border:1px solid var(--bordo); border-radius:14px; padding:10px; }
+  .misura .grande { font-size:1.9rem; }
+  .legenda { text-align:center; }
+  .pad { position:relative; width:min(78vw,300px); aspect-ratio:1; margin:0 auto; border-radius:18px; background:var(--tasto); border:1px solid var(--bordo); overflow:hidden; }
+  .croce-x, .croce-y { position:absolute; background:var(--bordo); } .croce-x { left:0; right:0; top:50%; height:1px; } .croce-y { top:0; bottom:0; left:50%; width:1px; }
+  .punto { position:absolute; left:50%; top:50%; width:34px; height:34px; margin:-17px 0 0 -17px; border-radius:50%; background:var(--acc); box-shadow:0 2px 8px rgba(31,111,209,.4); transition:left .05s, top .05s; }
+  .punto.premuto { background:var(--err); transform:scale(1.3); }
+  .stato-allarme { text-align:center; font-size:1.6rem; font-weight:700; padding:18px; border-radius:14px; background:var(--tasto); }
+  .stato-allarme.attivo { background:#e6f6ee; color:#0f7a4c; }
+  .stato-allarme.allarme { background:#fdecec; color:#c02626; animation:lampeggio .4s infinite alternate; }
+  @keyframes lampeggio { to { background:#f8c9c9; } }
+  .registro-eventi { margin:0; padding-left:18px; font-size:.85rem; color:var(--mut); line-height:1.6; }
+  .telecomando { width:220px; margin:0 auto; padding:16px; background:#2b2f36; border-radius:28px; display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .tasto-ir { aspect-ratio:1; border-radius:50%; background:#444a54; color:#fff; display:grid; place-items:center; font-size:.72rem; font-weight:600; transition:.1s; }
+  .tasto-ir.rosso { background:#c23a3a; }
+  .tasto-ir.premuto { background:var(--acc); transform:scale(1.15); box-shadow:0 0 14px rgba(31,111,209,.8); }
+  .ledbar { display:grid; grid-template-columns:repeat(8,1fr); gap:6px; direction:rtl; }
+  .led8 { direction:ltr; aspect-ratio:1; padding:0; border-radius:50%; font-size:.68rem; color:var(--mut); border:2px solid var(--bordo); background:#fff; }
+  .led8.on { background:#e84a4a; border-color:#e84a4a; color:#fff; box-shadow:0 0 10px rgba(232,74,74,.6); }
+  .display7 { width:120px; margin:0 auto; display:block; background:#2b2f36; border-radius:12px; padding:10px; }
+  .display7 rect, .display7 circle { fill:#3c3f45; transition:fill .1s; }
+  .display7 .on { fill:#ff4d3d; }
+  input.testo { font:inherit; font-family:ui-monospace,monospace; padding:12px; border:1px solid var(--bordo); border-radius:12px; background:#fff; color:var(--fg); }
+  .lcdbox { font-family:ui-monospace,monospace; font-size:clamp(13px,4.4vw,19px); background:#3d7be0; color:#eaf2ff; padding:12px 10px; border-radius:8px; border:6px solid #1d3f7a; white-space:pre; letter-spacing:.06em; overflow:hidden; }
+  .elica { font-size:110px; line-height:1; text-align:center; color:var(--acc); }
+  .quadrante-tondo { width:min(70vw,260px); margin:0 auto; display:block; cursor:pointer; }
   #registro summary { font-size:.85rem; color:var(--mut); }
   #log { font:12px/1.4 ui-monospace,monospace; color:var(--mut); max-height:180px; overflow:auto; white-space:pre-wrap; margin:8px 0 0; }
 </style>
