@@ -58,31 +58,135 @@ export const PROGETTI = [
   {
     id: "servo",
     icona: "🦾",
-    nome: "Servo",
-    descr: "Muove il servo SG90 da 0° a 180° con uno slider.",
+    nome: "Servo + sensore distanza",
+    descr: "Servo SG90 e sensore a ultrasuoni HC-SR04: comando manuale, radar e modalità «segui la mano».",
     collegamenti: [
-      "Marrone → GND",
-      "Rosso → 5V",
-      "Arancione → pin 9",
+      "UNO 5V → riga + della breadboard, UNO GND → riga –",
+      "Servo: rosso → riga +, marrone → riga –, arancione → pin 9",
+      "HC-SR04: Vcc → riga +, Gnd → riga –, Trig → pin 12, Echo → pin 11",
+      "Per il radar fissa il sensore sul braccio del servo e usa i cavetti maschio-femmina.",
     ],
     monta(el, api) {
-      const lancetta = h("div", { class: "lancetta" });
-      const valore = h("div", { class: "grande" }, "90°");
-      const invia = limitato(v => api.invia("A" + v));
-      const imposta = v => {
-        valore.textContent = v + "°";
-        lancetta.style.transform = `rotate(${v - 90}deg)`;
-        s.value = v;
-        invia(v);
-      };
-      const s = slider(0, 180, 90, imposta);
-      el.append(
-        h("div", { class: "quadrante" }, lancetta, h("div", { class: "perno" })),
-        valore, s,
-        h("div", { class: "griglia5" },
-          ...[0, 45, 90, 135, 180].map(a => h("button", { onclick: () => imposta(a) }, a + "°"))));
-      lancetta.style.transform = "rotate(0deg)";
-      setTimeout(() => api.invia("A90"), 50);
+      const fmt = cm => (cm < 0 ? "fuori portata" : cm.toFixed(1) + " cm");
+      const corpo = h("div", { class: "colonna" });
+      const tab = [["Manuale", manuale], ["Radar", radar], ["Segui", segui]];
+      const bottoni = tab.map(([n, f], i) => h("button", { onclick: () => apri(i) }, n));
+      el.append(h("div", { class: "schede" }, ...bottoni), corpo);
+      let gestore = null;
+      api.onRiga(l => gestore && gestore(l));
+
+      function apri(i) {
+        bottoni.forEach((b, j) => b.classList.toggle("attiva", i === j));
+        corpo.replaceChildren();
+        gestore = null;
+        tab[i][1]();
+      }
+
+      function quadrante() {
+        const lancetta = h("div", { class: "lancetta" });
+        return { el: h("div", { class: "quadrante" }, lancetta, h("div", { class: "perno" })),
+                 gira: a => (lancetta.style.transform = `rotate(${a - 90}deg)`) };
+      }
+
+      // --- Manuale: slider + distanza in tempo reale
+      function manuale() {
+        api.invia("M0");
+        const q = quadrante();
+        const valore = h("div", { class: "grande" }, "90°");
+        const dist = h("div", { class: "distanza" }, "–");
+        const invia = limitato(v => api.invia("A" + v));
+        const imposta = v => { valore.textContent = v + "°"; q.gira(v); s.value = v; invia(v); };
+        const s = slider(0, 180, 90, imposta);
+        corpo.append(q.el, valore, s,
+          h("div", { class: "griglia5" },
+            ...[0, 45, 90, 135, 180].map(a => h("button", { onclick: () => imposta(a) }, a + "°"))),
+          h("p", { class: "etichetta" }, "Distanza misurata dal sensore"), dist);
+        q.gira(90);
+        setTimeout(() => { api.invia("A90"); api.invia("S1"); }, 50);
+        gestore = l => { if (l.startsWith("D ")) dist.textContent = fmt(parseFloat(l.slice(2))); };
+      }
+
+      // --- Radar: il servo spazza da 15° a 165° e disegna gli ostacoli
+      function radar() {
+        api.invia("S0");
+        let portata = 100;
+        const punti = new Map();          // angolo -> {cm, t}
+        let angoloAttuale = 90;
+        const cv = h("canvas", { width: 600, height: 330, class: "grafico" });
+        const info = h("p", { class: "etichetta" }, "Avvio…");
+        const sel = h("select", { onchange: e => { portata = +e.target.value; disegna(); } },
+          ...[[50, "portata 50 cm"], [100, "portata 1 m"], [200, "portata 2 m"]].map(([v, t]) =>
+            h("option", { value: v, selected: v === 100 }, t)));
+        const pausa = h("button", { onclick: () => {
+          const ferma = pausa.textContent === "Pausa";
+          api.invia(ferma ? "M0" : "M1");
+          pausa.textContent = ferma ? "Riprendi" : "Pausa";
+        } }, "Pausa");
+        corpo.append(cv, info, h("div", { class: "riga" }, pausa, sel,
+          h("button", { onclick: () => { punti.clear(); disegna(); } }, "Pulisci")));
+        const ctx = cv.getContext("2d");
+        const O = { x: 300, y: 312 }, RAG = 290;
+        const pos = (a, r) => {
+          const rad = Math.PI - a * Math.PI / 180;
+          return [O.x + r * Math.cos(rad), O.y - r * Math.sin(rad)];
+        };
+        function disegna() {
+          ctx.clearRect(0, 0, 600, 330);
+          ctx.strokeStyle = "#dfe3ea"; ctx.fillStyle = "#8a90a0"; ctx.lineWidth = 1; ctx.font = "16px system-ui";
+          for (let k = 1; k <= 4; k++) {
+            ctx.beginPath(); ctx.arc(O.x, O.y, RAG * k / 4, Math.PI, 2 * Math.PI); ctx.stroke();
+            ctx.fillText(Math.round(portata * k / 4) + " cm", O.x + 4, O.y - RAG * k / 4 + 16);
+          }
+          for (const a of [0, 45, 90, 135, 180]) {
+            const [x, y] = pos(a, RAG); ctx.beginPath(); ctx.moveTo(O.x, O.y); ctx.lineTo(x, y); ctx.stroke();
+          }
+          // fascio
+          const [fx, fy] = pos(angoloAttuale, RAG);
+          ctx.strokeStyle = "rgba(31,111,209,.55)"; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.moveTo(O.x, O.y); ctx.lineTo(fx, fy); ctx.stroke();
+          // ostacoli
+          const ora = performance.now();
+          for (const [a, { cm, t }] of punti) {
+            if (cm < 0 || cm > portata) continue;
+            const eta = Math.min(1, (ora - t) / 8000);
+            const [x, y] = pos(a, cm / portata * RAG);
+            ctx.fillStyle = `rgba(212,60,60,${1 - eta * 0.75})`;
+            ctx.beginPath(); ctx.arc(x, y, 7, 0, 2 * Math.PI); ctx.fill();
+          }
+        }
+        disegna();
+        setTimeout(() => api.invia("M1"), 50);
+        gestore = l => {
+          const m = l.match(/^R (\d+) (-?[\d.]+)/);
+          if (!m) return;
+          angoloAttuale = +m[1];
+          const cm = parseFloat(m[2]);
+          punti.set(angoloAttuale, { cm, t: performance.now() });
+          info.textContent = `${angoloAttuale}° · ${fmt(cm)}`;
+          disegna();
+        };
+      }
+
+      // --- Segui: più ti avvicini, più il servo gira
+      function segui() {
+        api.invia("S0");
+        const q = quadrante();
+        const valore = h("div", { class: "grande" }, "–");
+        const dist = h("div", { class: "distanza" }, "–");
+        corpo.append(
+          h("p", {}, "Metti la mano davanti al sensore e muovila avanti e indietro tra 5 e 40 cm: il servo la segue."),
+          q.el, valore, dist);
+        setTimeout(() => api.invia("M2"), 50);
+        gestore = l => {
+          const m = l.match(/^F (\d+) (-?[\d.]+)/);
+          if (!m) return;
+          valore.textContent = m[1] + "°"; q.gira(+m[1]);
+          dist.textContent = fmt(parseFloat(m[2]));
+        };
+      }
+
+      apri(0);
+      return () => { api.invia("M0"); api.invia("S0"); };
     },
   },
 

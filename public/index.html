@@ -35,6 +35,11 @@
   button.largo { width:100%; padding:16px; }
   button.indietro { align-self:flex-start; background:none; color:var(--acc); padding:4px 0; }
   a.guida { display:inline-block; margin-top:10px; color:var(--acc); font-size:.9rem; text-decoration:none; }
+  .colonna { display:flex; flex-direction:column; gap:12px; }
+  .schede { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; background:var(--tasto); padding:4px; border-radius:14px; }
+  .schede button { background:none; padding:10px 0; }
+  .schede button.attiva { background:#fff; color:var(--acc); font-weight:600; box-shadow:0 1px 3px rgba(20,30,50,.12); }
+  .distanza { text-align:center; font-size:1.8rem; font-weight:700; color:var(--acc); font-variant-numeric:tabular-nums; }
   .riga { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
   .riga > button { flex:1; }
   .griglia3, .griglia5, .griglia7 { display:grid; gap:8px; }
