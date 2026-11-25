@@ -2074,21 +2074,249 @@ def guida_stazione():
               "Attenzione: alcuni pin cambiano (sensore a ultrasuoni su 3 e 4, pulsante su 5) e il potenziometro si sposta a destra."])
 
 
+
+
+# ======================================================================
+# RELÈ, TRANSISTOR, DIODO
+# ======================================================================
+B1K = ["#7a4a21", "#111111", "#111111", "#7a4a21", "#7a4a21"]
+
+
+def transistor_bb(foro, col, riga="h"):
+    """PN2222 con il lato piatto verso chi guarda: E, B, C nelle colonne col, col+1, col+2."""
+    pts = [foro(col + i, riga) for i in range(3)]
+    cx, cy = pts[1][0], foro(col, "f")[1] + 2
+    c.setStrokeColor(HexColor("#9a9a9a")); c.setLineWidth(1.8)
+    for q in pts: c.line(q[0], cy, q[0], q[1])
+    c.setFillColor(HexColor("#1b1b1b"))
+    pth = c.beginPath(); pth.moveTo(cx - 17, cy - 6); pth.lineTo(cx + 17, cy - 6)
+    pth.arcTo(cx - 17, cy - 6, cx + 17, cy + 22, startAng=0, extent=180); pth.close()
+    c.drawPath(pth, stroke=0, fill=1)
+    text(cx, cy + 3, "PN2222", 5.5, "SB", white, "c")
+    for q, n in zip(pts, "EBC"):
+        c.setFillColor(HexColor("#9a9a9a")); c.circle(*q, 2.2, stroke=0, fill=1)
+        text(q[0], cy - 14, n, 7, "SB", HexColor("#c03030"), "c")
+    text(cx + 26, cy - 3, "lato piatto", 6, "S", GREY, "l")
+
+
+def diodo(p1, p2):
+    """Diodo da p1 (anodo) a p2 (catodo, con la striscia)."""
+    c.setStrokeColor(HexColor("#8a8a8a")); c.setLineWidth(1.6); c.line(*p1, *p2)
+    mx, my = (p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2
+    ang = math.degrees(math.atan2(p2[1] - p1[1], p2[0] - p1[0]))
+    c.saveState(); c.translate(mx, my); c.rotate(ang)
+    c.setFillColor(HexColor("#1b1b1b")); c.roundRect(-14, -5, 28, 10, 3, stroke=0, fill=1)
+    c.setFillColor(HexColor("#d9d9d9")); c.rect(8, -5, 3.5, 10, stroke=0, fill=1)
+    c.restoreState()
+    for q in (p1, p2): c.setFillColor(HexColor("#8a8a8a")); c.circle(*q, 2.2, stroke=0, fill=1)
+
+
+def rele(x, y):
+    """Relè fuori dalla breadboard, con i piedini in basso e la vista da sotto accanto."""
+    m = modulo(x, y, 104, 62, "RELÈ 5V", ["bob.", "COM", "bob.", "NC", "NO"], "#2a6fd6")
+    # vista da sotto
+    vx, vy = x + 4, y + 82
+    c.setFillColor(HexColor("#eef3fb")); c.setStrokeColor(HexColor("#2a6fd6")); c.setLineWidth(1)
+    c.roundRect(vx, vy, 96, 52, 4, stroke=1, fill=1)
+    text(vx + 48, vy + 56, "visto da sotto", 6.5, "SB", GREY, "c")
+    for (px, py, n) in [(vx + 14, vy + 10, "bob."), (vx + 14, vy + 26, "COM"), (vx + 14, vy + 42, "bob."), (vx + 84, vy + 10, "NO"), (vx + 84, vy + 42, "NC")]:
+        c.setFillColor(HexColor("#555555")); c.circle(px, py, 3, stroke=0, fill=1)
+        text(px + (8 if px < vx + 50 else -8), py - 2.5, n, 6.5, "SB", HexColor("#c03030"), "l" if px < vx + 50 else "r")
+    return m
+
+
+def motore_disegno(mx, my):
+    c.setFillColor(HexColor("#c9ccd1")); c.roundRect(mx - 28, my - 18, 56, 36, 8, stroke=0, fill=1)
+    c.setFillColor(HexColor("#f2c230")); c.roundRect(mx + 28, my - 6, 26, 12, 3, stroke=0, fill=1)
+    text(mx, my - 3, "motore", 7.5, "SB", black, "c")
+    c.setStrokeColor(HexColor("#888888")); c.setLineWidth(2)
+    for a in (0, 120, 240):
+        r = math.radians(a); c.line(mx + 60, my, mx + 60 + 28 * math.cos(r), my + 28 * math.sin(r))
+    c.setFillColor(HexColor("#555555")); c.circle(mx + 60, my, 4, stroke=0, fill=1)
+    return (mx - 28, my + 6), (mx - 28, my - 6)
+
+
+NOTA_TRANSISTOR = ("Il transistor PN2222 ha 3 piedini. Tienilo con il lato piatto (quello con la scritta) verso di te: "
+                   "da sinistra sono E (emettitore), B (base) e C (collettore). Il diodo ha una striscia grigia da un lato: "
+                   "conta da che parte la metti.")
+
+
+# ------------------------------------------------------------------ 27 RELÈ
+def guida_rele():
+    def dis():
+        foro = bb(60, 300, 20, sopra=False)
+        p = uno(75, 40, hl={"D7": VIOLA, "GNDT": BLK, "5V": RED}, s=0.86)
+        transistor_bb(foro, 4)
+        resistenza(foro(5, "i"), foro(9, "i"), B1K)
+        text(foro(7, "i")[0], foro(7, "i")[1] - 15, "1 kΩ", 7, "SB", GREY, "c")
+        ponticello(foro(4, "j"), foro(4, "-b"))
+        diodo(foro(6, "g"), foro(11, "g"))
+        ponticello(foro(11, "j"), foro(11, "+b"), RED)
+        led_bb(foro, 14, "#2fb35a", "NO"); res_vert(foro, 15)
+        led_bb(foro, 17, "#e33b3b", "NC"); res_vert(foro, 18)
+        r = rele(450, 380)
+        # i due piedini della bobina hanno la stessa etichetta: sono ai lati di COM
+        b1, b2 = (r["COM"][0] - 13, r["COM"][1]), (r["COM"][0] + 13, r["COM"][1])
+        wire(b1, foro(11, "i"), RED, (b1[0] - 30, 340), (foro(11, "i")[0] + 20, foro(11, "i")[1] + 40), w=2.4)
+        wire(b2, foro(6, "j"), ORANGE, (b2[0] - 50, 300), (foro(6, "j")[0] + 30, foro(6, "j")[1] - 20), w=2.4)
+        wire(r["COM"], foro(20, "+b"), RED, (r["COM"][0], 320), (foro(20, "+b")[0] + 20, foro(20, "+b")[1] - 20), w=2.4)
+        wire(r["NO"], foro(14, "i"), GREEN, (r["NO"][0], 330), (foro(14, "i")[0] + 10, foro(14, "i")[1] + 50), w=2.4)
+        wire(r["NC"], foro(17, "i"), RED, (r["NC"][0], 335), (foro(17, "i")[0] + 10, foro(17, "i")[1] + 50), w=2.4)
+        wire(foro(9, "j"), p["D7"], VIOLA, (foro(9, "j")[0], 240), (p["D7"][0], 255), w=2.6)
+        piede_5v_gnd(p, foro)
+        etichetta(p["D7"][0] + 6, 202, "7", VIOLA)
+    return guida_generica("Relè", "Un interruttore meccanico comandato dalla UNO, tramite un transistor", 27,
+        ["la UNO, il cavo USB blu e la breadboard",
+         "il relè 5V (blu), il transistor PN2222 e un diodo",
+         "1 resistenza da 1 kΩ, 2 resistenze da 220 Ω, 1 LED verde e 1 rosso",
+         "5 cavetti maschio-femmina e 6 maschio-maschio"],
+        [("Difficoltà", "Difficile"), ("Tempo", "40 minuti"), ("Fili da collegare", "11 + 3 resistenze")],
+        dis,
+        [("Transistor in riga c, colonne 4-5-6", "Lato piatto verso di te: E in colonna 4, B in 5, C in 6. Colonna 4 (riga a) → riga –."),
+         ("Resistenza 1 kΩ da b5 a b9", "Fasce marrone-nero-nero-marrone-marrone. Colonna 9 (riga a) → pin 7."),
+         ("Diodo da d6 a d11", "La striscia grigia verso la colonna 11. Colonna 11 (riga a) → riga +."),
+         ("Riconosci i piedini del relè", "Da un lato ci sono tre piedini: quello in mezzo è COM, i due ai lati sono la bobina. Dall'altro lato, agli angoli, NC e NO. Il relè non entra bene nella breadboard: usa i cavetti maschio-femmina."),
+         ("Bobina", "Un piedino della bobina → colonna 11 (riga b), l'altro → colonna 6 (riga a). Il verso della bobina non conta."),
+         ("Contatti", "COM → riga +. NO → piedino lungo del LED verde (colonna 14). NC → piedino lungo del LED rosso (colonna 17). Ogni piedino corto → resistenza 220 Ω → riga –."),
+         ("Alimentazione", "5V della UNO → riga +, GND → riga –."),
+        ] + carica("«Relè»") + [
+         ("Prova", "Premi «Accendi»: senti il clic e si accende il verde al posto del rosso. Prova anche il timer e il lampeggio."),
+        ],
+        [("Transistor E (col. 4)", "riga –", ""), ("Transistor B (col. 5)", "1 kΩ → colonna 9", "b5 → b9"), ("Colonna 9", "pin 7", ""),
+         ("Transistor C (col. 6)", "bobina del relè", "maschio-femmina"), ("Diodo", "da d6 a d11", "striscia verso 11"),
+         ("Colonna 11", "riga + e bobina del relè", ""), ("Relè COM", "riga +", "maschio-femmina"),
+         ("Relè NO", "LED verde, lungo (col. 14)", "maschio-femmina"), ("Relè NC", "LED rosso, lungo (col. 17)", "maschio-femmina"),
+         ("LED, corti (col. 15, 18)", "220 Ω → riga –", ""), ("5V / GND della UNO", "riga + / riga –", "")],
+        [("Non si sente il clic", "Controlla il transistor (lato piatto verso di te, E-B-C) e la resistenza da 1 kΩ sulla base."),
+         ("Si accende il LED sbagliato", "Hai scambiato NC e NO: inverti i due cavetti."),
+         ("La UNO si riavvia quando scatta il relè", "Manca il diodo o è girato: la striscia va verso la riga +.")],
+        note=[NOTA_TRANSISTOR,
+              "Usa il relè solo con le basse tensioni del kit. Non collegarlo mai alla corrente di casa: è pericoloso."])
+
+
+# ------------------------------------------------------------------ 28 MOTORE COL TRANSISTOR
+def guida_motore():
+    def dis():
+        foro = bb(110, 290, 18)
+        p = uno(70, 30, hl={"D9": ORANGE, "GNDT": BLK}, s=0.80)
+        presa = modulo_alimentazione(foro, 1)
+        batteria(30, 300, presa)
+        transistor_bb(foro, 5)
+        resistenza(foro(6, "i"), foro(10, "i"), B1K)
+        text(foro(8, "i")[0], foro(8, "i")[1] - 15, "1 kΩ", 7, "SB", GREY, "c")
+        ponticello(foro(5, "j"), foro(5, "-b"))
+        diodo(foro(7, "g"), foro(12, "g"))
+        ponticello(foro(12, "j"), foro(12, "+b"), RED)
+        m1, m2 = motore_disegno(480, 430)
+        wire(m1, foro(12, "i"), RED, (m1[0] - 60, m1[1] + 10), (foro(12, "i")[0] + 40, foro(12, "i")[1] + 60), w=2.4)
+        wire(m2, foro(7, "j"), BLK, (m2[0] - 50, m2[1] - 60), (foro(7, "j")[0] + 50, foro(7, "j")[1] - 20), w=2.4)
+        wire(foro(10, "j"), p["D9"], ORANGE, (foro(10, "j")[0], 220), (p["D9"][0] + 20, 245), w=2.6)
+        wire(p["GNDT"], foro(3, "-b"), BLK, (p["GNDT"][0] - 10, 240), (foro(3, "-b")[0], 230))
+        etichetta(p["D9"][0] + 10, 190, "9", ORANGE); etichetta(p["GNDT"][0] - 18, 196, "GND", BLK)
+    return guida_generica("Motore col transistor", "Il motorino con l'elica, comandato da un solo transistor", 28,
+        ["la UNO, il cavo USB blu e la breadboard",
+         "il motorino con l'elica, il transistor PN2222 e un diodo",
+         "1 resistenza da 1 kΩ",
+         "il modulo di alimentazione, la batteria 9V e 5 cavetti maschio-maschio"],
+        [("Difficoltà", "Media"), ("Tempo", "25 minuti"), ("Fili da collegare", "5 + 1 resistenza")],
+        dis,
+        [("Modulo di alimentazione a sinistra", "Sulle righe + e – all'estremità sinistra, ponticelli su 5V, batteria collegata ma interruttore spento."),
+         ("Transistor in riga c, colonne 5-6-7", "Lato piatto verso di te: E in 5, B in 6, C in 7. Colonna 5 (riga a) → riga –."),
+         ("Resistenza 1 kΩ da b6 a b10", "Colonna 10 (riga a) → pin 9."),
+         ("Diodo da d7 a d12", "Striscia verso la colonna 12. Colonna 12 (riga a) → riga +."),
+         ("Motore", "Un filo → colonna 12 (riga b), l'altro → colonna 7 (riga a). Il verso dei fili del motore cambia solo il senso di rotazione."),
+         ("Massa comune", "GND della UNO → riga –. Non collegare il 5V della UNO."),
+        ] + carica("«Motore col transistor»") + [
+         ("Accendi il modulo e prova", "Muovi lo slider o premi «Soffio». Tieni le dita lontane dall'elica."),
+        ],
+        [("Modulo alimentazione", "righe + e – (sinistra)", "ponticelli su 5V"), ("Transistor E (col. 5)", "riga –", ""),
+         ("Transistor B (col. 6)", "1 kΩ → colonna 10", "b6 → b10"), ("Colonna 10", "pin 9", ""),
+         ("Transistor C (col. 7)", "motore, filo 1", ""), ("Diodo", "da d7 a d12", "striscia verso 12"),
+         ("Colonna 12", "riga + e motore, filo 2", ""), ("GND della UNO", "riga –", "massa comune")],
+        [("Il motore non gira", "Interruttore del modulo acceso? Controlla il transistor (E-B-C) e prova una velocità più alta."),
+         ("Il transistor scalda molto", "È girato: il lato piatto deve guardare verso di te, con E sulla riga –."),
+         ("La UNO si riavvia", "Manca il diodo o è girato, oppure manca il filo di massa comune.")],
+        note=[NOTA_TRANSISTOR,
+              "Rispetto al progetto 16 (L293D) è più semplice ma il motore gira in un solo verso: il transistor è un rubinetto che si apre e si chiude, non un deviatore."])
+
+
+# ------------------------------------------------------------------ 29 TERMOSTATO
+def guida_termostato():
+    def dis():
+        foro = bb(110, 290, 20)
+        p = uno(70, 30, hl={"D7": VIOLA, "D2": BLUEW, "A0": ORANGE, "GNDT": BLK}, s=0.80)
+        presa = modulo_alimentazione(foro, 1)
+        batteria(30, 300, presa)
+        transistor_bb(foro, 4)
+        resistenza(foro(5, "i"), foro(9, "i"), B1K)
+        ponticello(foro(4, "j"), foro(4, "-b"))
+        diodo(foro(6, "g"), foro(11, "g"))
+        ponticello(foro(11, "j"), foro(11, "+b"), RED)
+        potenziometro_bb(foro, 14)
+        ponticello(foro(14, "j"), foro(14, "+b"), RED); ponticello(foro(18, "j"), foro(18, "-b"), BLK)
+        r = rele(486, 370)
+        b1, b2 = (r["COM"][0] - 13, r["COM"][1]), (r["COM"][0] + 13, r["COM"][1])
+        wire(b1, foro(11, "i"), RED, (b1[0] - 30, 330), (foro(11, "i")[0] + 20, foro(11, "i")[1] + 40), w=2.2)
+        wire(b2, foro(6, "j"), ORANGE, (b2[0] - 60, 300), (foro(6, "j")[0] + 30, foro(6, "j")[1] - 20), w=2.2)
+        wire(r["COM"], foro(20, "+b"), RED, (r["COM"][0], 320), (foro(20, "+b")[0] + 20, foro(20, "+b")[1] - 20), w=2.2)
+        m1, m2 = motore_disegno(500, 260)
+        wire(r["NO"], m1, GREEN, (r["NO"][0] + 30, 330), (m1[0] - 20, m1[1] + 20), w=2.2)
+        wire(m2, foro(19, "-b"), BLK, (m2[0] - 30, m2[1] - 10), (foro(19, "-b")[0] + 30, foro(19, "-b")[1] - 10), w=2.2)
+        dht = modulo(470, 60, 60, 76, "DHT11", ["S", "+", "–"], "#2b8ad8")
+        wire(dht["S"], p["D2"], BLUEW, (dht["S"][0] - 40, 30), (p["D2"][0] + 60, 260), w=2.2)
+        wire(dht["+"], foro(17, "+s"), RED, (dht["+"][0] + 80, 200), (foro(17, "+s")[0] + 160, foro(17, "+s")[1] + 20), w=2.2)
+        wire(dht["–"], foro(16, "-b"), BLK, (dht["–"][0] + 70, 40), (foro(16, "-b")[0] + 60, foro(16, "-b")[1] - 30), w=2.2)
+        wire(foro(9, "j"), p["D7"], VIOLA, (foro(9, "j")[0], 225), (p["D7"][0], 245), w=2.4)
+        wire(foro(16, "j"), p["A0"], ORANGE, (foro(16, "j")[0] - 20, 200), (p["A0"][0] + 80, 10), w=2.4)
+        wire(p["GNDT"], foro(3, "-b"), BLK, (p["GNDT"][0] - 10, 240), (foro(3, "-b")[0], 230))
+        etichetta(p["D7"][0] + 4, 186, "7", VIOLA); etichetta(p["D2"][0] + 16, 186, "2", BLUEW)
+        etichetta(p["A0"][0] + 4, 14, "A0", ORANGE); etichetta(p["GNDT"][0] - 18, 196, "GND", BLK)
+    return guida_autonoma("Termostato col ventilatore", "Il ventilatore si accende da solo quando fa caldo", 29,
+        ["il circuito del relè del progetto 27 (relè, PN2222, diodo, resistenza 1 kΩ)",
+         "il motorino con l'elica, il DHT11 e il potenziometro",
+         "il modulo di alimentazione e la batteria 9V",
+         "8 cavetti maschio-femmina e circa 10 maschio-maschio"],
+        [("Difficoltà", "Difficile"), ("Tempo", "50 minuti"), ("Fili da collegare", "~18 + 1 resistenza")],
+        dis,
+        [("Modulo di alimentazione a sinistra", "Sulle righe + e – all'estremità sinistra, ponticelli su 5V, batteria collegata ma interruttore spento."),
+         ("Comando del relè come nel progetto 27", "Transistor in riga c, colonne 4-5-6 (E in 4 → riga –); resistenza 1 kΩ da b5 a b9, colonna 9 → pin 7; diodo da d6 a d11 con la striscia verso 11; colonna 11 → riga +."),
+         ("Bobina del relè", "Un piedino della bobina → colonna 11, l'altro → colonna 6 (cavetti maschio-femmina)."),
+         ("Ventilatore", "COM del relè → riga +. NO del relè → un filo del motore. L'altro filo del motore → riga –."),
+         ("Potenziometro della soglia in riga c, colonne 14-16-18", "Colonna 14 → riga +, colonna 18 → riga –, centrale (16) → A0."),
+         ("DHT11 (maschio-femmina)", "S → pin 2, + → riga +, – → riga –."),
+         ("Massa comune", "GND della UNO → riga –. Non collegare il 5V della UNO."),
+        ] + carica("«Termostato col ventilatore»") + [
+         ("Regola e prova", "Gira la manopola: nell'app vedi la soglia (da 15 a 35 °C). Abbassala sotto la temperatura della stanza: clic, e il ventilatore parte. Rialzala e si spegne."),
+        ],
+        [("Transistor E / B / C", "riga – / 1 kΩ → pin 7 / bobina", "col. 4 / 5 / 6"), ("Diodo", "da d6 a d11", "striscia verso 11"),
+         ("Colonna 11", "riga + e bobina", ""), ("Relè COM", "riga +", ""), ("Relè NO", "motore, filo 1", ""),
+         ("Motore, filo 2", "riga –", ""), ("Potenziometro, esterni", "riga + / riga –", "col. 14 / 18"),
+         ("Potenziometro, centrale", "A0", "col. 16"), ("DHT11 – S / + / –", "pin 2 / riga + / riga –", "maschio-femmina"),
+         ("GND della UNO", "riga –", "massa comune")],
+        [("Il relè scatta ma il motore non gira", "Il motore va tra NO e la riga –, e COM sulla riga +. Controlla che il modulo sia acceso."),
+         ("Il ventilatore resta sempre spento", "Il DHT11 non risponde (lo vedi nell'app): controlla S sul pin 2. Per sicurezza, senza misura resta spento."),
+         ("Scatta avanti e indietro", "La temperatura è proprio sulla soglia: è normale che ogni tanto cambi, c'è già 1 grado di margine.")],
+        note=[NOTA_TRANSISTOR,
+              "Questo progetto unisce tre cose già viste: il relè del 27, il ventilatore e il sensore DHT11. Montalo un pezzo alla volta e prova ogni parte dall'app."])
+
+
 GUIDE = {"blink": guida_blink, "servo": guida_servo, "rgb": guida_rgb, "luce": guida_luce, "buzzer": guida_buzzer,
          "semaforo": guida_semaforo, "pulsanti": guida_pulsanti, "potenziometro": guida_potenziometro, "meteo": guida_meteo,
          "joystick": guida_joystick, "allarme": guida_allarme, "telecomando": guida_telecomando, "registro": guida_registro,
          "settesegmenti": guida_settesegmenti, "lcd": guida_lcd, "ventilatore": guida_ventilatore, "passo": guida_passo,
          "parcheggio": guida_parcheggio, "termometro": guida_termometro, "simon": guida_simon, "dado": guida_dado,
-         "metro": guida_metro, "lampada": guida_lampada, "cronometro": guida_cronometro, "servoir": guida_servoir, "stazione": guida_stazione}
+         "metro": guida_metro, "lampada": guida_lampada, "cronometro": guida_cronometro, "servoir": guida_servoir, "stazione": guida_stazione,
+         "rele": guida_rele, "motore": guida_motore, "termostato": guida_termostato}
 TITOLI = {"blink": "LED integrato", "servo": "Servo + sensore distanza", "rgb": "LED RGB", "luce": "Sensore di luce", "buzzer": "Buzzer",
           "semaforo": "Semaforo", "pulsanti": "Pulsanti e inclinazione", "potenziometro": "Manopola", "meteo": "Stazione meteo",
           "joystick": "Joystick", "allarme": "Allarme antifurto", "telecomando": "Telecomando a infrarossi", "registro": "8 LED con il 74HC595",
           "settesegmenti": "Display a 7 segmenti", "lcd": "Display LCD", "ventilatore": "Ventilatore", "passo": "Motore passo-passo",
           "parcheggio": "Sensore di parcheggio", "termometro": "Termometro con LCD", "simon": "Gioco Simon", "dado": "Dado elettronico",
-          "metro": "Metro portatile", "lampada": "Lampada notturna", "cronometro": "Cronometro a 4 cifre", "servoir": "Servo col telecomando", "stazione": "Stazione LCD: meteo + distanza"}
+          "metro": "Metro portatile", "lampada": "Lampada notturna", "cronometro": "Cronometro a 4 cifre", "servoir": "Servo col telecomando", "stazione": "Stazione LCD: meteo + distanza",
+          "rele": "Relè", "motore": "Motore col transistor", "termostato": "Termostato col ventilatore"}
 NUM = {"blink": 1, "semaforo": 2, "pulsanti": 3, "buzzer": 4, "rgb": 5, "potenziometro": 6, "luce": 7, "meteo": 8, "joystick": 9,
        "allarme": 10, "servo": 11, "telecomando": 12, "registro": 13, "settesegmenti": 14, "lcd": 15, "ventilatore": 16, "passo": 17,
-       "parcheggio": 18, "termometro": 19, "simon": 20, "dado": 21, "metro": 22, "lampada": 23, "cronometro": 24, "servoir": 25, "stazione": 26}
+       "parcheggio": 18, "termometro": 19, "simon": 20, "dado": 21, "metro": 22, "lampada": 23, "cronometro": 24, "servoir": 25, "stazione": 26, "rele": 27, "motore": 28, "termostato": 29}
 
 if __name__ == "__main__":
     import io

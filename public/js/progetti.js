@@ -1194,7 +1194,137 @@ export const PROGETTI = [
       });
     },
   },
+  // ================================================================ RELÈ, TRANSISTOR, DIODO
+
+  // ---------------------------------------------------------------- RELÈ
+  {
+    id: "rele",
+    n: 27, livello: 4,
+    icona: "🔌",
+    nome: "Relè",
+    descr: "Un interruttore meccanico comandato dalla UNO tramite un transistor: senti il «clic» e scambia due LED.",
+    collegamenti: [
+      "Transistor PN2222 (lato piatto verso di te: E, B, C da sinistra): pin 7 → resistenza 1 kΩ → B; E → riga –",
+      "C → un piedino della bobina del relè; l'altro piedino della bobina → riga +",
+      "Diodo tra i due piedini della bobina, con la striscia verso la riga +",
+      "Relè: COM → riga +, NO → LED verde, NC → LED rosso (piedino corto → 220 Ω → riga –)",
+      "5V della UNO → riga +, GND → riga –",
+    ],
+    monta(el, api) {
+      const stato = h("div", { class: "stato-allarme" }, "–");
+      const leds = [h("div", { class: "lampada piccola" }), h("div", { class: "lampada piccola" })];
+      const resto = h("p", { class: "etichetta centro" }, "");
+      const sec = h("select", {}, ...[[5, "5 secondi"], [10, "10 secondi"], [30, "30 secondi"], [60, "1 minuto"]].map(([v, t]) => h("option", { value: v }, t)));
+      el.append(stato,
+        h("div", { class: "riga centro" }, h("div", { class: "centro" }, leds[1], h("p", { class: "etichetta" }, "NC")), h("div", { class: "centro" }, leds[0], h("p", { class: "etichetta" }, "NO"))),
+        h("div", { class: "riga" },
+          h("button", { class: "primario", onclick: () => api.invia("R1") }, "Accendi"),
+          h("button", { onclick: () => api.invia("R0") }, "Spegni")),
+        h("div", { class: "riga" }, h("button", { onclick: () => api.invia("T" + sec.value) }, "⏲ Accendi per"), sec),
+        h("div", { class: "riga" },
+          h("button", { onclick: () => api.invia("L2000") }, "Lampeggia"),
+          h("button", { onclick: () => api.invia("L0") }, "Ferma lampeggio")),
+        resto,
+        h("p", { class: "etichetta" }, "Il relè è un interruttore meccanico: non farlo scattare troppo spesso e usalo solo con le basse tensioni del kit, mai con la corrente di casa."));
+      api.onRiga(l => {
+        const m = l.match(/^R ([01]) (\d+) (\d+)/);
+        if (!m) return;
+        const on = m[1] === "1";
+        stato.textContent = on ? "Relè ACCESO · contatto NO chiuso" : "Relè spento · contatto NC chiuso";
+        stato.className = "stato-allarme" + (on ? " attivo" : "");
+        leds[0].style.background = on ? "#16a065" : ""; leds[0].style.boxShadow = on ? "0 0 14px #16a065" : "none";
+        leds[1].style.background = on ? "" : "#d43c3c"; leds[1].style.boxShadow = on ? "none" : "0 0 14px #d43c3c";
+        resto.textContent = +m[2] ? `Si spegne tra ${m[2]} s` : +m[3] ? "Lampeggio attivo" : "";
+      });
+      setTimeout(() => api.invia("?"), 50);
+    },
+  },
+
+  // ---------------------------------------------------------------- MOTORE COL TRANSISTOR
+  {
+    id: "motore",
+    n: 28, livello: 4,
+    icona: "💨",
+    nome: "Motore col transistor",
+    descr: "Il motorino con l'elica comandato da un solo transistor PN2222: più semplice dell'L293D, gira in un verso.",
+    collegamenti: [
+      "Modulo di alimentazione sulla breadboard (ponticelli su 5V) con la batteria 9V",
+      "Transistor PN2222 (lato piatto verso di te: E, B, C): pin 9 → 1 kΩ → B; E → riga –",
+      "C → un filo del motore; l'altro filo del motore → riga +",
+      "Diodo in parallelo al motore, con la striscia verso la riga +",
+      "GND della UNO → riga –. NON collegare il 5V della UNO.",
+    ],
+    monta(el, api) {
+      const elica = h("div", { class: "elica" }, "✣");
+      const valore = h("div", { class: "grande" }, "0%");
+      const invia = limitato(v => api.invia("V" + v), 80);
+      const s = slider(0, 100, 0, v => { valore.textContent = v + "%"; invia(v); }, 5);
+      let vel = 0, ang = 0, raf;
+      const gira = () => { ang += vel * 0.25; elica.style.transform = `rotate(${ang}deg)`; raf = requestAnimationFrame(gira); };
+      gira();
+      el.append(elica, valore, s,
+        h("div", { class: "riga" },
+          h("button", { class: "primario", onclick: () => api.invia("S") }, "■ Stop"),
+          h("button", { onclick: () => api.invia("P") }, "💨 Soffio")),
+        h("p", { class: "etichetta" }, "Il transistor fa da rubinetto: la UNO apre e chiude il passaggio di corrente migliaia di volte al secondo (PWM) e il motore rallenta o accelera. Il diodo assorbe la scossa che il motore dà quando si spegne."));
+      api.onRiga(l => {
+        const m = l.match(/^V (\d+)/);
+        if (!m) return;
+        vel = +m[1]; s.value = vel; valore.textContent = vel + "%";
+      });
+      setTimeout(() => api.invia("?"), 50);
+      return () => { cancelAnimationFrame(raf); api.invia("S"); };
+    },
+  },
+
+  // ---------------------------------------------------------------- TERMOSTATO
+  {
+    id: "termostato",
+    n: 29, livello: 5, autonomo: true,
+    icona: "🌬️",
+    nome: "Termostato col ventilatore",
+    descr: "Quando la temperatura supera la soglia scelta con la manopola, il relè accende il ventilatore da solo.",
+    collegamenti: [
+      "Modulo di alimentazione sulla breadboard (5V) con la batteria 9V; GND della UNO → riga –",
+      "Relè, transistor, resistenza 1 kΩ e diodo come nel progetto 27 (comando sul pin 7)",
+      "Relè: COM → riga +, NO → un filo del motore, altro filo del motore → riga –",
+      "DHT11: S → pin 2, + → riga +, – → riga –",
+      "Potenziometro: esterni → riga + e riga –, centrale → A0",
+    ],
+    monta(el, api) {
+      const t = h("div", { class: "grande" }, "–"), sg = h("div", { class: "grande" }, "–");
+      const stato = h("div", { class: "stato-allarme" }, "–");
+      const elica = h("div", { class: "elica piccola-elica" }, "✣");
+      const umid = h("p", { class: "etichetta centro" }, "");
+      const modi = [["Automatico", "M0"], ["Sempre acceso", "M1"], ["Sempre spento", "M2"]];
+      const bott = modi.map(([n, c]) => h("button", { onclick: () => api.invia(c) }, n));
+      let on = false, ang = 0, raf;
+      const gira = () => { if (on) { ang += 14; elica.style.transform = `rotate(${ang}deg)`; } raf = requestAnimationFrame(gira); };
+      gira();
+      el.append(
+        h("div", { class: "griglia2" },
+          h("div", { class: "misura" }, h("p", { class: "etichetta" }, "Temperatura"), t),
+          h("div", { class: "misura" }, h("p", { class: "etichetta" }, "Soglia (manopola)"), sg)),
+        umid, elica, stato,
+        h("div", { class: "schede" }, ...bott),
+        h("p", { class: "etichetta" }, "In automatico il ventilatore si accende quando la temperatura supera la soglia di almeno 1 grado e si spegne quando scende di 1 grado sotto. Per provarlo, abbassa la soglia girando la manopola, oppure scalda il DHT11 tenendolo tra le dita."));
+      api.onRiga(l => {
+        const m = l.match(/^T (-?\d+) (-?\d+) (\d+) ([01]) (\d)/);
+        if (!m) return;
+        const ok = +m[1] > -50;
+        t.textContent = ok ? m[1] + " °C" : "–";
+        sg.textContent = m[3] + " °C";
+        umid.textContent = ok ? `Umidità ${m[2]} %` : "Il DHT11 non risponde: in automatico il ventilatore resta spento.";
+        on = m[4] === "1";
+        stato.textContent = on ? "Ventilatore ACCESO" : "Ventilatore spento";
+        stato.className = "stato-allarme" + (on ? " attivo" : "");
+        bott.forEach((b, i) => b.classList.toggle("attiva", i === +m[5]));
+      });
+      setTimeout(() => api.invia("?"), 50);
+      return () => cancelAnimationFrame(raf);
+    },
+  },
 ];
 
-PROGETTI.sort((a, b) => a.n - b.n);
+PROGETTI.sort((a, b) => a.livello - b.livello || a.n - b.n);
 export const LIVELLI = ["", "Livello 1 · Primi passi", "Livello 2 · Sensori", "Livello 3 · Moduli e chip", "Livello 4 · Motori", "Livello 5 · Progetti autonomi (anche a batteria)"];
