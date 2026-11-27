@@ -1,0 +1,13 @@
+{
+  "name": "uno-lab-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "App Android di UNO Lab (Capacitor): carica la PWA dal sito e aggiunge il collegamento USB nativo con la UNO",
+  "scripts": { "sync": "cap sync android" },
+  "dependencies": {
+    "@capacitor/android": "^8.6.3",
+    "@capacitor/browser": "^8.0.5",
+    "@capacitor/core": "^8.6.3"
+  },
+  "devDependencies": { "@capacitor/cli": "^8.6.3" }
+}

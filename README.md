@@ -32,3 +32,14 @@ con la rete scarica sempre la versione più recente.
 ## Aggiornare guide e programmi
 Le guide PDF si rigenerano con `python3 strumenti/guide.py public/guide` (serve `reportlab`).
 Dopo aver cambiato guide o programmi, aumenta `VERSIONE` in `public/js/versione.js`: così il telefono scarica le copie nuove.
+
+## App Android (Capacitor)
+
+La cartella `app/` contiene l'app Android: apre il sito `https://elegoo.pl-pssnt.workers.dev` (quindi si aggiorna da sola come la PWA) e aggiunge
+- **USB nativo** (`UnoSerialPlugin.java`, senza librerie esterne): nella WebView di Android WebUSB non esiste, quindi il plugin parla direttamente con la porta seriale CDC del chip ATmega16U2 (stesse funzioni del driver WebUSB: segnali DTR/RTS, invio, ricezione). In `public/js/nativo.js` c'è il trasporto `UsbNativo` usato da `link.js` quando la pagina gira dentro l'app.
+- **Apertura automatica**: quando colleghi la UNO, Android propone di aprire UNO Lab (filtro USB in `res/xml/device_filter.xml`); scegliendo «Sempre» non chiede più il permesso.
+- Le guide PDF si aprono in Chrome (plugin `@capacitor/browser`).
+
+GitHub Actions (`.github/workflows/android.yml`) costruisce l'APK a ogni modifica di `app/` e lo pubblica nella release
+[`app-latest`](https://github.com/plpssnt-prog/elegoo/releases/download/app-latest/UNO-Lab.apk). La chiave di firma
+`unolab-debug.keystore` è nel repo apposta, così ogni APK si installa sopra il precedente.

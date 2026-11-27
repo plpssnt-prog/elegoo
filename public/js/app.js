@@ -2,6 +2,7 @@ import { Link, browserSupportato, sleep } from "./link.js";
 import { leggiHex, programma } from "./flasher.js";
 import { PROGETTI, LIVELLI, h } from "./progetti.js";
 import { VERSIONE } from "./versione.js";
+import { isApp, APK_URL, quandoAttaccata, apriEsterno } from "./nativo.js";
 
 const link = new Link();
 const stato = {
@@ -131,6 +132,11 @@ function aggiornaProgresso() {
 }
 
 // ------------------------------------------------------------------ viste
+function linkGuida(p) {
+  const url = `guide/${p.id}.pdf?v=${VERSIONE}`;
+  return h("a", { class: "guida", href: url, target: "_blank", onclick: e => { if (apriEsterno(url)) e.preventDefault(); } }, "📄 Guida PDF con disegni");
+}
+
 function schedaProgetto(p) {
   const sopra = stato.caricato === p.id;
   const inCorso = stato.inCarica === p.id;
@@ -144,7 +150,7 @@ function schedaProgetto(p) {
     h("details", {},
       h("summary", {}, "Collegamenti"),
       h("ul", {}, ...p.collegamenti.map(c => h("li", {}, c))),
-      h("a", { class: "guida", href: `guide/${p.id}.pdf?v=${VERSIONE}`, target: "_blank" }, "📄 Guida PDF con disegni")),
+      linkGuida(p)),
     inCorso
       ? h("div", {}, h("div", { class: "progresso" }, h("div", {})), h("p", { class: "fase" }, stato.fase))
       : h("div", { class: "riga" },
@@ -162,6 +168,12 @@ function vistaHome() {
   } else if (!link.connesso) {
     figli.push(h("div", { class: "card avviso" },
       "Collega la UNO al telefono (hub o adattatore OTG) e premi «Collega» in alto."));
+  }
+  if (!isApp && /Android/i.test(navigator.userAgent)) {
+    figli.push(h("details", { class: "card app-android" },
+      h("summary", {}, "📱 Prova l'app Android"),
+      h("p", {}, "Stesse funzioni, più comoda: quando colleghi la UNO si apre da sola e si collega senza chiedere ogni volta."),
+      h("a", { class: "pulsante-link", href: APK_URL }, "Scarica UNO-Lab.apk")));
   }
   if (stato.errore) figli.push(h("div", { class: "card errore" }, "Caricamento non riuscito: " + stato.errore));
   const p = trova(stato.caricato);
@@ -200,7 +212,7 @@ function vistaProgetto(p) {
   figli.push(corpo,
     h("details", { class: "card" }, h("summary", {}, "Collegamenti"),
       h("ul", {}, ...p.collegamenti.map(c => h("li", {}, c))),
-      h("a", { class: "guida", href: `guide/${p.id}.pdf?v=${VERSIONE}`, target: "_blank" }, "📄 Guida PDF con disegni")));
+      linkGuida(p)));
   const api = {
     invia: s => link.inviaRiga(s).catch(e => log("Errore invio: " + e.message)),
     onRiga: f => ascoltatori.push(f),
@@ -220,6 +232,7 @@ function disegna() {
 
 window.addEventListener("hashchange", disegna);
 navigator.usb?.addEventListener("disconnect", () => { log("Cavo scollegato"); link.disconnetti(); });
+quandoAttaccata(() => { log("Scheda collegata"); setTimeout(() => { if (!link.connesso) connetti(true); }, 400); });
 
 aggiornaBarra();
 disegna();
@@ -227,7 +240,7 @@ disegna();
 if (browserSupportato()) connetti(true);
 
 // ------------------------------------------------------------------ PWA
-if ("serviceWorker" in navigator) {
+if ("serviceWorker" in navigator && !isApp) {
   navigator.serviceWorker.register("sw.js").catch(e => log("Service worker: " + e.message));
 }
 let richiestaInstalla = null;

@@ -1,0 +1,12 @@
+{
+  "appId": "dev.plpssnt.unolab",
+  "appName": "UNO Lab",
+  "webDir": "www",
+  "server": {
+    "url": "https://elegoo.pl-pssnt.workers.dev",
+    "androidScheme": "https"
+  },
+  "android": {
+    "appendUserAgent": "UNOLabApp/1"
+  }
+}

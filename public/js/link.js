@@ -2,6 +2,8 @@
 // Android: WebUSB con un driver CDC-ACM minimale (chip ATmega16U2).
 // PC: Web Serial standard (Chrome/Edge).
 
+import { UsbNativo } from "./nativo.js";
+
 export const BAUD = 115200;
 const enc = new TextEncoder();
 const dec = new TextDecoder();
@@ -88,6 +90,7 @@ class SerialPortT {
 }
 
 function tipoTrasporto() {
+  if (UsbNativo.disponibile()) return UsbNativo;      // app Android: USB nativo
   const android = /Android/i.test(navigator.userAgent);
   if (android && UsbCdc.disponibile()) return UsbCdc;
   if (SerialPortT.disponibile()) return SerialPortT;

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Schede che aprono UNO Lab quando le colleghi al telefono -->
+<resources>
+    <usb-device vendor-id="9025" />   <!-- Arduino 0x2341 (anche le UNO compatibili con chip 16U2) -->
+    <usb-device vendor-id="10755" />  <!-- Arduino.org 0x2A03 -->
+    <usb-device vendor-id="6790" />   <!-- CH340 0x1A86 -->
+</resources>
